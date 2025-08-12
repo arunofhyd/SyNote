@@ -52,25 +52,45 @@
     <div id="app-view" class="view-container w-full h-full max-w-6xl mx-auto hidden opacity-0 scale-95">
         <div class="bg-white rounded-xl border border-gray-200 shadow-2xl flex h-full">
             <!-- Sidebar -->
-            <div id="sidebar" class="w-1/3 md:w-1/4 h-full bg-gray-50 rounded-l-xl border-r border-gray-200 flex flex-col">
+            <div id="sidebar" class="h-full bg-gray-50 rounded-l-xl border-r border-gray-200 flex flex-col">
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-gray-800">My Notes</h2>
-                    <button id="sign-out-btn" class="icon-btn" title="Sign Out">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="hamburger-btn" class="icon-btn" title="Toggle Sidebar">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h2 class="text-xl font-bold text-gray-800 sidebar-title">SyNote</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="select-notes-btn" class="icon-btn" title="Select Notes">
+                            <i class="fas fa-check-square"></i>
+                        </button>
+                        <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
+                    </div>
                 </div>
                 <div id="note-list" class="flex-grow overflow-y-auto">
                     <!-- Note items will be dynamically inserted here -->
                 </div>
                 <div class="p-2 border-t border-gray-200">
-                    <button id="new-note-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">
-                        <i class="fas fa-plus mr-2"></i> New Note
-                    </button>
+                    <div id="default-actions">
+                        <button id="new-note-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">
+                            <i class="fas fa-plus mr-2"></i> <span class="sidebar-text">New Note</span>
+                        </button>
+                    </div>
+                    <div id="multiselect-actions" class="hidden flex gap-2">
+                        <button id="delete-selected-btn" class="w-full btn-danger py-3 rounded-lg font-semibold flex items-center justify-center" disabled>
+                            <i class="fas fa-trash-alt mr-2"></i> <span class="sidebar-text">Delete (0)</span>
+                        </button>
+                        <button id="cancel-multiselect-btn" class="w-auto btn-secondary px-4 py-3 rounded-lg font-semibold">
+                            <span class="sidebar-text">Cancel</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Main Content -->
-            <div id="main-content" class="w-2/3 md:w-3/4 h-full flex flex-col p-6">
+            <div id="main-content" class="h-full flex flex-col p-6">
                 <div id="note-editor-container" class="flex-grow flex flex-col hidden">
                     <div class="flex justify-between items-center mb-4">
                         <input type="text" id="note-title-input" class="text-3xl font-extrabold text-gray-800 tracking-tight bg-transparent focus:outline-none w-full" placeholder="Untitled Note">
