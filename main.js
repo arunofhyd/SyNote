@@ -93,7 +93,6 @@ function selectNote(note) {
     activeNoteId = note.id;
     updateEditor(note);
     
-    // Update active state in the list
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.toggle('active', item.dataset.id === activeNoteId);
     });
