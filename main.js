@@ -150,7 +150,11 @@ function updateEditor(note) {
 
 // --- Sidebar ---
 function toggleSidebar() {
-    sidebar.classList.toggle('collapsed');
+    if (window.innerWidth <= 767) { // Mobile view
+        sidebar.classList.toggle('open');
+    } else { // Desktop view
+        sidebar.classList.toggle('collapsed');
+    }
 }
 
 // --- Multi-Select Functions ---
