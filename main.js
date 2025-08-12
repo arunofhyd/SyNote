@@ -1,16 +1,22 @@
 import { auth, db } from './firebase-config.js';
-import { doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, collection, onSnapshot, setDoc, addDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
-const noteInput = document.getElementById('note-input');
+const noteList = document.getElementById('note-list');
+const noteEditorContainer = document.getElementById('note-editor-container');
+const placeholderView = document.getElementById('placeholder-view');
+const noteTitleInput = document.getElementById('note-title-input');
+const noteContentInput = document.getElementById('note-content-input');
 const saveStatus = document.getElementById('save-status');
 
 let currentUser = null;
+let activeNoteId = null;
 let unsubscribeFromNotes = null;
-let debounceTimer = null;
+let titleDebounceTimer = null;
+let contentDebounceTimer = null;
 
 // --- UI Functions ---
 export function showLoginView() {
@@ -35,40 +41,137 @@ export function handleUserLogin(user) {
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
     
-    const noteDocRef = doc(db, "notes", user.uid);
-    unsubscribeFromNotes = onSnapshot(noteDocRef, (doc) => {
-        if (doc.exists()) {
-            const data = doc.data();
-            if (noteInput.value !== data.content) {
-                noteInput.value = data.content;
+    const notesCollectionRef = collection(db, "users", user.uid, "notes");
+    const q = query(notesCollectionRef, orderBy("updatedAt", "desc"));
+
+    unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
+        const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderNoteList(notes);
+        
+        if (activeNoteId && snapshot.docChanges().some(change => change.doc.id === activeNoteId && change.type === 'modified')) {
+            const activeNoteData = notes.find(note => note.id === activeNoteId);
+            if (activeNoteData) {
+                updateEditor(activeNoteData);
             }
-        } else {
-            setDoc(noteDocRef, { content: "" });
         }
-        saveStatus.textContent = "All changes saved.";
     });
     showAppView();
 }
 
-// --- Data Functions ---
-function saveNote() {
-    if (!currentUser) return;
-    saveStatus.textContent = "Saving...";
-    const noteDocRef = doc(db, "notes", currentUser.uid);
-    setDoc(noteDocRef, { content: noteInput.value }, { merge: true })
-        .then(() => {
-            saveStatus.textContent = "All changes saved.";
-        })
-        .catch(error => {
-            console.error("Error saving note:", error);
-            saveStatus.textContent = "Error saving.";
-        });
+function renderNoteList(notes) {
+    noteList.innerHTML = '';
+    if (notes.length === 0) {
+        noteEditorContainer.classList.add('hidden');
+        placeholderView.classList.remove('hidden');
+        return;
+    }
+
+    notes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'note-item';
+        item.dataset.id = note.id;
+        if (note.id === activeNoteId) {
+            item.classList.add('active');
+        }
+
+        const title = document.createElement('div');
+        title.className = 'note-item-title';
+        title.textContent = note.title || 'Untitled Note';
+        
+        const snippet = document.createElement('div');
+        snippet.className = 'note-item-snippet';
+        snippet.textContent = note.content ? note.content.substring(0, 40) + '...' : 'No additional text';
+
+        item.appendChild(title);
+        item.appendChild(snippet);
+        item.addEventListener('click', () => selectNote(note));
+        noteList.appendChild(item);
+    });
 }
 
-function debouncedSave() {
-    clearTimeout(debounceTimer);
+function selectNote(note) {
+    activeNoteId = note.id;
+    updateEditor(note);
+    
+    // Update active state in the list
+    document.querySelectorAll('.note-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.id === activeNoteId);
+    });
+
+    placeholderView.classList.add('hidden');
+    noteEditorContainer.classList.remove('hidden');
+}
+
+function updateEditor(note) {
+    if (noteTitleInput.value !== note.title) {
+        noteTitleInput.value = note.title || '';
+    }
+    if (noteContentInput.value !== note.content) {
+        noteContentInput.value = note.content || '';
+    }
+    saveStatus.textContent = "All changes saved.";
+}
+
+// --- Data Functions ---
+async function createNewNote() {
+    if (!currentUser) return;
+    const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
+    try {
+        const newNoteRef = await addDoc(notesCollectionRef, {
+            title: "Untitled Note",
+            content: "",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+        selectNote({ id: newNoteRef.id, title: "Untitled Note", content: "" });
+    } catch (error) {
+        console.error("Error creating new note:", error);
+        showMessage("Could not create a new note.", "error");
+    }
+}
+
+async function deleteActiveNote() {
+    if (!currentUser || !activeNoteId) return;
+    if (confirm("Are you sure you want to delete this note?")) {
+        const noteDocRef = doc(db, "users", currentUser.uid, "notes", activeNoteId);
+        try {
+            await deleteDoc(noteDocRef);
+            activeNoteId = null;
+            noteEditorContainer.classList.add('hidden');
+            placeholderView.classList.remove('hidden');
+        } catch (error) {
+            console.error("Error deleting note:", error);
+            showMessage("Could not delete the note.", "error");
+        }
+    }
+}
+
+function saveNote(field, value) {
+    if (!currentUser || !activeNoteId) return;
+    saveStatus.textContent = "Saving...";
+    const noteDocRef = doc(db, "users", currentUser.uid, "notes", activeNoteId);
+    setDoc(noteDocRef, { 
+        [field]: value,
+        updatedAt: serverTimestamp() 
+    }, { merge: true })
+    .then(() => {
+        saveStatus.textContent = "All changes saved.";
+    })
+    .catch(error => {
+        console.error("Error saving note:", error);
+        saveStatus.textContent = "Error saving.";
+    });
+}
+
+function debouncedSave(field, value) {
     saveStatus.textContent = "Typing...";
-    debounceTimer = setTimeout(saveNote, 500);
+    if (field === 'title') {
+        clearTimeout(titleDebounceTimer);
+        titleDebounceTimer = setTimeout(() => saveNote(field, value), 500);
+    } else {
+        clearTimeout(contentDebounceTimer);
+        contentDebounceTimer = setTimeout(() => saveNote(field, value), 500);
+    }
 }
 
 // --- Event Listeners ---
@@ -81,27 +184,19 @@ function setupEventListeners() {
     document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
     document.getElementById('sign-out-btn').addEventListener('click', appSignOut);
     document.getElementById('forgot-password-btn').addEventListener('click', () => resetPassword(emailInput.value));
+    document.getElementById('new-note-btn').addEventListener('click', createNewNote);
+    document.getElementById('delete-note-btn').addEventListener('click', deleteActiveNote);
 
-    noteInput.addEventListener('input', debouncedSave);
+    noteTitleInput.addEventListener('input', (e) => debouncedSave('title', e.target.value));
+    noteContentInput.addEventListener('input', (e) => debouncedSave('content', e.target.value));
 
     const passwordToggleBtn = document.getElementById('password-toggle-btn');
     const passwordToggleIcon = document.getElementById('password-toggle-icon');
-    
     passwordToggleBtn.addEventListener('click', () => {
-        // Check the current type of the input field
         const isPassword = passwordInput.type === 'password';
-
-        if (isPassword) {
-            // Change to text and show the slashed eye
-            passwordInput.type = 'text';
-            passwordToggleIcon.classList.remove('fa-eye');
-            passwordToggleIcon.classList.add('fa-eye-slash');
-        } else {
-            // Change back to password and show the open eye
-            passwordInput.type = 'password';
-            passwordToggleIcon.classList.remove('fa-eye-slash');
-            passwordToggleIcon.classList.add('fa-eye');
-        }
+        passwordInput.type = isPassword ? 'text' : 'password';
+        passwordToggleIcon.classList.toggle('fa-eye-slash', !isPassword);
+        passwordToggleIcon.classList.toggle('fa-eye', isPassword);
     });
 }
 
