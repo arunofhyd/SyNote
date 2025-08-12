@@ -82,6 +82,7 @@ body {
 #sidebar {
     width: 33.333333%; /* Corresponds to w-1/3 */
     transition: width 0.3s ease-in-out;
+    overflow: hidden; /* Prevent content from overflowing during transition */
 }
 #main-content {
     width: 66.666667%; /* Corresponds to w-2/3 */
@@ -98,19 +99,32 @@ body {
 
 /* Collapsed Sidebar Styles */
 #sidebar.collapsed {
-    width: 80px; /* A fixed width for the collapsed state */
+    width: 68px; /* A fixed width for the collapsed state */
 }
 #sidebar.collapsed .sidebar-title,
 #sidebar.collapsed .sidebar-text,
-#sidebar.collapsed .note-item-content {
+#sidebar.collapsed .note-item-content,
+#sidebar.collapsed .sidebar-actions {
     display: none;
 }
 #sidebar.collapsed #main-content {
-    width: calc(100% - 80px);
+    width: calc(100% - 68px);
 }
 #sidebar.collapsed .note-item {
     justify-content: center;
 }
+#sidebar.collapsed #new-note-btn,
+#sidebar.collapsed #delete-selected-btn,
+#sidebar.collapsed #cancel-multiselect-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+}
+#sidebar.collapsed #new-note-btn .fa-plus,
+#sidebar.collapsed #delete-selected-btn .fa-trash-alt {
+    margin-right: 0;
+}
+
 
 /* Note List Styles */
 .note-item {
