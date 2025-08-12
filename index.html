@@ -50,9 +50,9 @@
 
     <!-- Notepad View (hidden by default) -->
     <div id="app-view" class="view-container w-full h-full max-w-6xl mx-auto hidden opacity-0 scale-95">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl flex h-full">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl flex h-full overflow-hidden">
             <!-- Sidebar -->
-            <div id="sidebar" class="h-full bg-gray-50 rounded-l-xl border-r border-gray-200 flex flex-col">
+            <div id="sidebar" class="h-full bg-gray-50 rounded-l-xl border-r border-gray-200 flex flex-col flex-shrink-0">
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                     <div class="flex items-center gap-2">
                         <button id="hamburger-btn" class="icon-btn" title="Toggle Sidebar">
@@ -60,7 +60,7 @@
                         </button>
                         <h2 class="text-xl font-bold text-gray-800 sidebar-title">SyNote</h2>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 sidebar-actions">
                         <button id="select-notes-btn" class="icon-btn" title="Select Notes">
                             <i class="fas fa-check-square"></i>
                         </button>
@@ -90,7 +90,7 @@
             </div>
 
             <!-- Main Content -->
-            <div id="main-content" class="h-full flex flex-col p-6">
+            <div id="main-content" class="h-full flex flex-col p-6 flex-grow">
                 <div id="note-editor-container" class="flex-grow flex flex-col hidden">
                     <div class="flex justify-between items-center mb-4">
                         <input type="text" id="note-title-input" class="text-3xl font-extrabold text-gray-800 tracking-tight bg-transparent focus:outline-none w-full" placeholder="Untitled Note">
