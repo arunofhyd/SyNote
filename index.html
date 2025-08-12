@@ -51,9 +51,6 @@
     <!-- Notepad View (hidden by default) -->
     <div id="app-view" class="view-container w-full h-full max-w-6xl mx-auto hidden opacity-0 scale-95">
         <div class="bg-white rounded-xl border border-gray-200 shadow-2xl flex h-full overflow-hidden relative">
-            <button id="hamburger-btn" class="icon-btn floating-hamburger" title="Toggle Sidebar">
-                <i class="fas fa-bars"></i>
-            </button>
             <!-- Sidebar -->
             <div id="sidebar" class="h-full bg-gray-50 rounded-l-xl border-r border-gray-200 flex flex-col flex-shrink-0">
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -89,13 +86,16 @@
 
             <!-- Main Content -->
             <div id="main-content" class="h-full flex flex-col p-6 flex-grow">
+                <div class="flex justify-between items-center mb-4 relative">
+                    <button id="hamburger-btn" class="icon-btn" title="Toggle Sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <input type="text" id="note-title-input" class="text-3xl font-extrabold text-gray-800 tracking-tight bg-transparent focus:outline-none w-full" placeholder="Untitled Note">
+                    <button id="delete-note-btn" class="icon-btn text-gray-500 hover:text-red-500 flex-shrink-0" title="Delete Note">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
                 <div id="note-editor-container" class="flex-grow flex flex-col hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <input type="text" id="note-title-input" class="text-3xl font-extrabold text-gray-800 tracking-tight bg-transparent focus:outline-none w-full" placeholder="Untitled Note">
-                        <button id="delete-note-btn" class="icon-btn text-gray-500 hover:text-red-500" title="Delete Note">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
                     <textarea id="note-content-input" class="w-full h-full flex-grow bg-transparent resize-none focus:outline-none text-lg" placeholder="Start typing..."></textarea>
                     <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
                 </div>
