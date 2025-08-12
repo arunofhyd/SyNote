@@ -21,7 +21,7 @@ const cancelMultiselectBtn = document.getElementById('cancel-multiselect-btn');
 
 let currentUser = null;
 let activeNoteId = null;
-let allNotes = []; // Keep a local copy of all notes
+let allNotes = [];
 let unsubscribeFromNotes = null;
 let titleDebounceTimer = null;
 let contentDebounceTimer = null;
@@ -60,7 +60,6 @@ export function handleUserLogin(user) {
         allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderNoteList(allNotes);
 
-        // Auto-select the top note if none is active
         if (!activeNoteId && allNotes.length > 0) {
             selectNote(allNotes[0]);
         }
@@ -152,7 +151,6 @@ function updateEditor(note) {
 // --- Sidebar ---
 function toggleSidebar() {
     sidebar.classList.toggle('collapsed');
-    mainContent.classList.toggle('collapsed');
 }
 
 // --- Multi-Select Functions ---
@@ -196,14 +194,12 @@ async function createNewNote() {
     if (!currentUser) return;
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
     try {
-        const newNoteRef = await addDoc(notesCollectionRef, {
+        await addDoc(notesCollectionRef, {
             title: "Untitled Note",
             content: "",
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
-        // The onSnapshot listener will automatically add the new note to the top
-        // and our logic will select it.
     } catch (error) {
         console.error("Error creating new note:", error);
         showMessage("Could not create a new note.", "error");
@@ -220,11 +216,11 @@ async function deleteActiveNote() {
         try {
             await deleteDoc(noteDocRef);
             showMessage("Note deleted.", 'success');
+            const oldActiveId = activeNoteId;
             activeNoteId = null;
             deletionPending = null;
             
-            // Auto-select next note
-            const remainingNotes = allNotes.filter(note => note.id !== noteDocRef.id);
+            const remainingNotes = allNotes.filter(note => note.id !== oldActiveId);
             if (remainingNotes.length > 0) {
                 const newIndex = Math.min(deletedNoteIndex, remainingNotes.length - 1);
                 selectNote(remainingNotes[newIndex]);
