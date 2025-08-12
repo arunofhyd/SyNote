@@ -6,7 +6,6 @@ import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOu
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const sidebar = document.getElementById('sidebar');
-const mainContent = document.getElementById('main-content');
 const noteList = document.getElementById('note-list');
 const noteEditorContainer = document.getElementById('note-editor-container');
 const placeholderView = document.getElementById('placeholder-view');
@@ -186,7 +185,7 @@ function handleNoteSelectionChange(e) {
 function updateDeleteButtonState() {
     const count = selectedNoteIds.size;
     deleteSelectedBtn.disabled = count === 0;
-    const deleteText = deleteSelectedBtn.querySelector('.sidebar-text');
+    const deleteText = deleteSelectedBtn.querySelector('span');
     if (deleteText) {
         deleteText.textContent = `Delete (${count})`;
     }
