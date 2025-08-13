@@ -12,60 +12,63 @@
 <body>
 
 <div class="main-container">
-    <!-- Login View -->
-    <div id="login-view" class="view-container w-full max-w-md mx-auto">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-8 text-center">
-            <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight mb-2">SyNote</h1>
-            <p class="text-gray-600 mb-8">Your notes, synced in real-time.</p>
-            
-            <div class="space-y-4 text-left mb-2">
-                <input type="email" id="email-input" placeholder="Email" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
-                <div class="relative">
-                    <input type="password" id="password-input" placeholder="Password" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
-                    <button type="button" id="password-toggle-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
-                        <i id="password-toggle-icon" class="fas fa-eye"></i>
-                    </button>
+    <!-- This new main tag will hold the views and allow the footer to be positioned correctly -->
+    <main id="content-wrapper">
+        <!-- Login View -->
+        <div id="login-view" class="view-container w-full max-w-md mx-auto">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-8 text-center">
+                <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight mb-2">SyNote</h1>
+                <p class="text-gray-600 mb-8">Your notes, synced in real-time.</p>
+                
+                <div class="space-y-4 text-left mb-2">
+                    <input type="email" id="email-input" placeholder="Email" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
+                    <div class="relative">
+                        <input type="password" id="password-input" placeholder="Password" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
+                        <button type="button" id="password-toggle-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                            <i id="password-toggle-icon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="text-right mb-4">
-                <button id="forgot-password-btn" class="text-sm text-blue-600 hover:underline focus:outline-none">Forgot Password?</button>
-            </div>
+                
+                <div class="text-right mb-4">
+                    <button id="forgot-password-btn" class="text-sm text-blue-600 hover:underline focus:outline-none">Forgot Password?</button>
+                </div>
 
-            <div class="grid grid-cols-2 gap-4 my-4">
-                <button id="email-signin-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">Sign In</button>
-                <button id="email-signup-btn" class="w-full btn-secondary py-3 rounded-lg font-semibold flex items-center justify-center">Sign Up</button>
-            </div>
-            <div class="relative flex py-2 items-center">
-                <div class="flex-grow border-t border-gray-300"></div>
-                <span class="flex-shrink mx-4 text-gray-400 text-sm font-medium">OR</span>
-                <div class="flex-grow border-t border-gray-300"></div>
-            </div>
-            <button id="google-signin-btn" class="mt-4 w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" class="w-6 h-6 mr-3" alt="Google icon">
-                Continue with Google
-            </button>
-        </div>
-    </div>
-
-    <!-- Notepad View (hidden by default) -->
-    <div id="app-view" class="view-container w-full h-full max-w-4xl mx-auto hidden opacity-0 scale-95">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-6 md:p-8 flex flex-col h-full">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">SyNote</h1>
-                <button id="sign-out-btn" class="icon-btn" title="Sign Out">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <div class="grid grid-cols-2 gap-4 my-4">
+                    <button id="email-signin-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">Sign In</button>
+                    <button id="email-signup-btn" class="w-full btn-secondary py-3 rounded-lg font-semibold flex items-center justify-center">Sign Up</button>
+                </div>
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-300"></div>
+                    <span class="flex-shrink mx-4 text-gray-400 text-sm font-medium">OR</span>
+                    <div class="flex-grow border-t border-gray-300"></div>
+                </div>
+                <button id="google-signin-btn" class="mt-4 w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" class="w-6 h-6 mr-3" alt="Google icon">
+                    Continue with Google
                 </button>
             </div>
-            <div class="flex-grow flex flex-col">
-                <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
-            </div>
-            <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
         </div>
-    </div>
 
-    <!-- The footer is now a direct sibling of the views, ensuring correct placement -->
-    <footer class="mt-4 text-center">
+        <!-- Notepad View (hidden by default) -->
+        <div id="app-view" class="view-container w-full h-full max-w-4xl mx-auto hidden opacity-0 scale-95">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-6 md:p-8 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">SyNote</h1>
+                    <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </button>
+                </div>
+                <div class="flex-grow flex flex-col">
+                    <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
+                </div>
+                <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- The footer is now a direct child of the flex column, pushing it to the bottom -->
+    <footer class="py-4 text-center">
         <a href="mailto:arunthomas04042001@gmail.com" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
             <span>Reach out to the developer</span>
