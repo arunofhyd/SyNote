@@ -11,6 +11,8 @@ const saveStatus = document.getElementById('save-status');
 let currentUser = null;
 let unsubscribeFromNotes = null;
 let debounceTimer = null;
+let actionPending = null; // To track pending confirmations (e.g., 'clear', 'signout')
+let actionTimer = null; // Timer to reset the pending action
 
 // --- UI Functions ---
 export function showLoginView() {
@@ -79,7 +81,6 @@ function setupEventListeners() {
     document.getElementById('email-signup-btn').addEventListener('click', () => signUpWithEmail(emailInput.value, passwordInput.value));
     document.getElementById('email-signin-btn').addEventListener('click', () => signInWithEmail(emailInput.value, passwordInput.value));
     document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
-    document.getElementById('sign-out-btn').addEventListener('click', appSignOut);
     document.getElementById('forgot-password-btn').addEventListener('click', () => resetPassword(emailInput.value));
 
     noteInput.addEventListener('input', debouncedSave);
@@ -94,11 +95,36 @@ function setupEventListeners() {
         passwordToggleIcon.classList.toggle('fa-eye', isPassword);
     });
 
-    // --- Utility Button Listeners ---
+    // --- Utility Button Listeners with Custom Confirmation ---
     document.getElementById('clear-all-btn').addEventListener('click', () => {
-        if (confirm("Are you sure you want to clear all text?")) {
+        if (actionPending === 'clear') {
+            clearTimeout(actionTimer);
+            actionPending = null;
             noteInput.value = "";
-            saveNote(); // Save the cleared content immediately
+            saveNote();
+            showMessage("Note cleared.", 'success');
+        } else {
+            actionPending = 'clear';
+            showMessage("Click again to confirm clearing the note.", 'info');
+            clearTimeout(actionTimer);
+            actionTimer = setTimeout(() => {
+                actionPending = null;
+            }, 5000);
+        }
+    });
+
+    document.getElementById('sign-out-btn').addEventListener('click', () => {
+        if (actionPending === 'signout') {
+            clearTimeout(actionTimer);
+            actionPending = null;
+            appSignOut();
+        } else {
+            actionPending = 'signout';
+            showMessage("Click again to sign out.", 'info');
+            clearTimeout(actionTimer);
+            actionTimer = setTimeout(() => {
+                actionPending = null;
+            }, 5000);
         }
     });
 
@@ -131,6 +157,8 @@ export function showMessage(msg, type = 'info') {
     messageDisplay.className = 'fixed bottom-5 right-5 z-50 px-4 py-3 rounded-lg shadow-md transition-opacity duration-300';
     if (type === 'error') {
         messageDisplay.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+    } else if (type === 'info') {
+        messageDisplay.classList.add('bg-blue-100', 'border', 'border-blue-400', 'text-blue-700');
     } else {
         messageDisplay.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
     }
