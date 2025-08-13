@@ -6,10 +6,17 @@ body {
 }
 .main-container {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    flex-direction: column; /* Changed to column */
+    justify-content: space-between; /* Pushes footer to bottom */
     min-height: 100vh;
     padding: 1rem;
+}
+#content-wrapper {
+    flex-grow: 1; /* Allows this element to take up available space */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
 }
 .view-container {
     transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
