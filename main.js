@@ -88,19 +88,37 @@ function setupEventListeners() {
     const passwordToggleIcon = document.getElementById('password-toggle-icon');
     
     passwordToggleBtn.addEventListener('click', () => {
-        // Check the current type of the input field
         const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        passwordToggleIcon.classList.toggle('fa-eye-slash', !isPassword);
+        passwordToggleIcon.classList.toggle('fa-eye', isPassword);
+    });
 
-        if (isPassword) {
-            // Change to text and show the slashed eye
-            passwordInput.type = 'text';
-            passwordToggleIcon.classList.remove('fa-eye');
-            passwordToggleIcon.classList.add('fa-eye-slash');
-        } else {
-            // Change back to password and show the open eye
-            passwordInput.type = 'password';
-            passwordToggleIcon.classList.remove('fa-eye-slash');
-            passwordToggleIcon.classList.add('fa-eye');
+    // --- Utility Button Listeners ---
+    document.getElementById('clear-all-btn').addEventListener('click', () => {
+        if (confirm("Are you sure you want to clear all text?")) {
+            noteInput.value = "";
+            saveNote(); // Save the cleared content immediately
+        }
+    });
+
+    document.getElementById('copy-all-btn').addEventListener('click', () => {
+        if (noteInput.value) {
+            navigator.clipboard.writeText(noteInput.value)
+                .then(() => showMessage("Copied to clipboard!", 'success'))
+                .catch(err => showMessage("Failed to copy.", 'error'));
+        }
+    });
+
+    document.getElementById('paste-all-btn').addEventListener('click', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+                noteInput.value += text;
+                saveNote(); // Save the new content immediately
+            }
+        } catch (err) {
+            showMessage("Failed to paste from clipboard.", 'error');
         }
     });
 }
