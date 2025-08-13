@@ -16,6 +16,7 @@ let actionTimer = null; // Timer to reset the pending action
 
 // --- UI Functions ---
 export function showLoginView() {
+    document.querySelector('.main-container').classList.remove('is-app-view');
     appView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
         appView.classList.add('hidden');
@@ -25,6 +26,7 @@ export function showLoginView() {
 }
 
 export function showAppView() {
+    document.querySelector('.main-container').classList.add('is-app-view');
     loginView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
         loginView.classList.add('hidden');
