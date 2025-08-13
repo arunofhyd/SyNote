@@ -4,13 +4,19 @@ body {
     color: #2d3748;
     transition: background-color 0.3s ease-in-out;
 }
+/* Find and replace the .main-container rule */
 .main-container {
     display: flex;
-    flex-direction: column; /* Changed to column */
-    justify-content: space-between; /* Pushes footer to bottom */
+    flex-direction: column;
+    justify-content: center; /* This is now the default */
     min-height: 100vh;
     padding: 1rem;
 }
+/* This new rule will align the main app to the top */
+.main-container.is-app-view {
+    justify-content: flex-start;
+}
+
 #content-wrapper {
     flex-grow: 1; /* Allows this element to take up available space */
     display: flex;
