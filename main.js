@@ -7,6 +7,7 @@ const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const noteInput = document.getElementById('note-input');
 const saveStatus = document.getElementById('save-status');
+const mainContainer = document.querySelector('.main-container');
 
 let currentUser = null;
 let unsubscribeFromNotes = null;
@@ -16,23 +17,15 @@ let actionTimer = null; // Timer to reset the pending action
 
 // --- UI Functions ---
 export function showLoginView() {
-    document.querySelector('.main-container').classList.remove('is-app-view');
-    appView.classList.add('opacity-0', 'scale-95');
-    setTimeout(() => {
-        appView.classList.add('hidden');
-        loginView.classList.remove('hidden');
-        loginView.classList.remove('opacity-0', 'scale-95');
-    }, 300);
+    mainContainer.classList.remove('is-app-view');
+    appView.classList.add('hidden');
+    loginView.classList.remove('hidden');
 }
 
 export function showAppView() {
-    document.querySelector('.main-container').classList.add('is-app-view');
-    loginView.classList.add('opacity-0', 'scale-95');
-    setTimeout(() => {
-        loginView.classList.add('hidden');
-        appView.classList.remove('hidden');
-        appView.classList.remove('opacity-0', 'scale-95');
-    }, 300);
+    mainContainer.classList.add('is-app-view');
+    loginView.classList.add('hidden');
+    appView.classList.remove('hidden');
 }
 
 export function handleUserLogin(user) {
