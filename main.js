@@ -114,13 +114,16 @@ export function showMessage(msg, type = 'info') {
 export function setButtonLoadingState(button, isLoading) {
     const spinner = button.querySelector('.fa-spinner');
     const content = button.querySelector('.button-content');
+    const googleIcon = button.querySelector('.google-icon');
 
     if (isLoading) {
         if (content) content.classList.add('hidden');
+        if (googleIcon) googleIcon.classList.add('hidden');
         if (spinner) spinner.classList.remove('hidden');
         button.disabled = true;
     } else {
         if (content) content.classList.remove('hidden');
+        if (googleIcon) googleIcon.classList.remove('hidden');
         if (spinner) spinner.classList.add('hidden');
         button.disabled = false;
     }
