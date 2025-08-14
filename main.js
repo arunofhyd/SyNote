@@ -88,20 +88,11 @@ function setupEventListeners() {
 
     const passwordToggleBtn = document.getElementById('password-toggle-btn');
     const passwordToggleIcon = document.getElementById('password-toggle-icon');
-    
     passwordToggleBtn.addEventListener('click', () => {
         const isPassword = passwordInput.type === 'password';
-        if (isPassword) {
-            // Change to text and show the slashed eye
-            passwordInput.type = 'text';
-            passwordToggleIcon.classList.remove('fa-eye');
-            passwordToggleIcon.classList.add('fa-eye-slash');
-        } else {
-            // Change back to password and show the open eye
-            passwordInput.type = 'password';
-            passwordToggleIcon.classList.remove('fa-eye-slash');
-            passwordToggleIcon.classList.add('fa-eye');
-        }
+        passwordInput.type = isPassword ? 'text' : 'password';
+        passwordToggleIcon.classList.toggle('fa-eye-slash', !isPassword);
+        passwordToggleIcon.classList.toggle('fa-eye', isPassword);
     });
 }
 
@@ -123,14 +114,19 @@ export function showMessage(msg, type = 'info') {
 export function setButtonLoadingState(button, isLoading) {
     const spinner = button.querySelector('.fa-spinner');
     const content = button.querySelector('.button-content');
-    // The googleIcon is handled by the 'hidden' class on the content span
+    const googleIcon = button.querySelector('.google-icon');
 
     if (isLoading) {
         if (content) content.classList.add('hidden');
+        // Only hide the Google icon if it's NOT the Google button
+        if (googleIcon && button.id !== 'google-signin-btn') {
+            googleIcon.classList.add('hidden');
+        }
         if (spinner) spinner.classList.remove('hidden');
         button.disabled = true;
     } else {
         if (content) content.classList.remove('hidden');
+        if (googleIcon) googleIcon.classList.remove('hidden');
         if (spinner) spinner.classList.add('hidden');
         button.disabled = false;
     }
