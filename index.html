@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="google-site-verification" content="iExbroKtO4ZRq3ZjUsyY8JJowXvx-yHOy4yQq0iS6vY" />
     <title>SyNote - Real-time Notes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,8 +33,14 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4 my-4">
-                <button id="email-signin-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">Sign In</button>
-                <button id="email-signup-btn" class="w-full btn-secondary py-3 rounded-lg font-semibold flex items-center justify-center">Sign Up</button>
+                <button id="email-signin-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin hidden"></i>
+                    <span class="button-content">Sign In</span>
+                </button>
+                <button id="email-signup-btn" class="w-full btn-secondary py-3 rounded-lg font-semibold flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin hidden"></i>
+                    <span class="button-content">Sign Up</span>
+                </button>
             </div>
             <div class="relative flex py-2 items-center">
                 <div class="flex-grow border-t border-gray-300"></div>
@@ -43,8 +48,11 @@
                 <div class="flex-grow border-t border-gray-300"></div>
             </div>
             <button id="google-signin-btn" class="mt-4 w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" class="w-6 h-6 mr-3" alt="Google icon">
-                Continue with Google
+                <i class="fas fa-spinner fa-spin hidden"></i>
+                <span class="button-content flex items-center justify-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Google_Favicon_2025.svg" class="w-6 h-6 mr-3" alt="Google icon">
+                    Continue with Google
+                </span>
             </button>
         </div>
     </div>
@@ -54,20 +62,9 @@
         <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-6 md:p-8 flex flex-col h-full">
             <div class="flex justify-between items-center mb-4">
                 <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">SyNote</h1>
-                <div class="flex items-center space-x-2">
-                    <button id="clear-all-btn" class="icon-btn" title="Clear All">
-                        <i class="fas fa-eraser"></i>
-                    </button>
-                    <button id="copy-all-btn" class="icon-btn" title="Copy All">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button id="paste-all-btn" class="icon-btn" title="Paste">
-                        <i class="fas fa-paste"></i>
-                    </button>
-                    <button id="sign-out-btn" class="icon-btn" title="Sign Out">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    </button>
-                </div>
+                <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
             </div>
             <div class="flex-grow flex flex-col">
                 <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
