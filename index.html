@@ -9,6 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <!-- Optimal Favicon for all modern browsers -->
+    <link rel="icon" href="/assets/logo.png" type="image/png" sizes="any">
+    
+    <!-- Apple Touch Icon for iOS home screen -->
+    <link rel="apple-touch-icon" href="/assets/logo.png">
 </head>
 <body>
 
@@ -16,7 +21,10 @@
     <!-- Login View -->
     <div id="login-view" class="view-container w-full max-w-md mx-auto">
         <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-8 text-center">
-            <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight mb-2">SyNote</h1>
+            <h1 class="text-5xl font-extrabold text-gray-800 tracking-tight mb-2 flex items-center justify-center">
+                <img src="/assets/logo.png" alt="SyNote Logo" class="h-12 mr-2">
+                <span>SyNote</span>
+            </h1>
             <p class="text-gray-600 mb-8">Your notes, synced in real-time.</p>
             
             <div class="space-y-4 text-left mb-2">
@@ -60,7 +68,10 @@
     <div id="app-view" class="view-container w-full h-full max-w-4xl mx-auto hidden opacity-0 scale-95">
         <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-6 md:p-8 flex flex-col h-full">
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight">SyNote</h1>
+                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight flex items-center">
+                    <img src="/assets/logo.png" alt="SyNote Logo" class="h-8 mr-2">
+                    <span>SyNote</span>
+                </h1>
                 <div class="flex items-center space-x-2">
                     <button id="clear-all-btn" class="icon-btn" title="Clear All">
                         <i class="fas fa-eraser"></i>
