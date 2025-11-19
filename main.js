@@ -1,19 +1,22 @@
 import { auth, db } from './firebase-config.js';
-import { doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
 const loginView = document.getElementById('login-view');
 const appView = document.getElementById('app-view');
 const noteInput = document.getElementById('note-input');
+const noteTitle = document.getElementById('note-title');
+const notesList = document.getElementById('notes-list');
 const saveStatus = document.getElementById('save-status');
 const mainContainer = document.querySelector('.main-container');
 
 let currentUser = null;
+let currentNoteId = null;
 let unsubscribeFromNotes = null;
 let debounceTimer = null;
-let actionPending = null; // To track pending confirmations (e.g., 'clear', 'signout')
-let actionTimer = null; // Timer to reset the pending action
+let actionPending = null;
+let actionTimer = null;
 
 // --- UI Functions ---
 export function showLoginView() {
@@ -29,38 +32,147 @@ export function showLoginView() {
 export function showAppView() {
     loginView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
-        mainContainer.classList.add('is-app-view'); // Move this inside the timeout
+        mainContainer.classList.add('is-app-view');
         loginView.classList.add('hidden');
         appView.classList.remove('hidden');
         appView.classList.remove('opacity-0', 'scale-95');
     }, 300);
 }
 
+function renderNotesList(notes) {
+    notesList.innerHTML = '';
+    if (notes.length === 0) {
+        notesList.innerHTML = '<p class="text-gray-500 text-center">No notes yet.</p>';
+        noteTitle.value = '';
+        noteInput.value = '';
+        noteTitle.disabled = true;
+        noteInput.disabled = true;
+        return;
+    }
+
+    noteTitle.disabled = false;
+    noteInput.disabled = false;
+
+    notes.forEach(note => {
+        const noteElement = document.createElement('div');
+        noteElement.classList.add('note-item', 'flex', 'justify-between', 'items-center');
+        noteElement.dataset.id = note.id;
+        if (note.id === currentNoteId) {
+            noteElement.classList.add('active');
+        }
+        noteElement.innerHTML = `
+            <h3 class="note-item-title">${note.title || 'Untitled Note'}</h3>
+            <div class="note-item-actions">
+                <button class="rename-note-btn"><i class="fas fa-pencil-alt"></i></button>
+                <button class="delete-note-btn"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+        noteElement.querySelector('.rename-note-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            renameNote(note.id, note.title);
+        });
+        noteElement.querySelector('.delete-note-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteNote(note.id);
+        });
+        noteElement.addEventListener('click', () => loadNote(note.id, note.title, note.content));
+        notesList.appendChild(noteElement);
+    });
+}
+
+function loadNote(id, title, content) {
+    currentNoteId = id;
+    noteTitle.value = title;
+    noteInput.value = content;
+
+    document.querySelectorAll('.note-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    const activeNoteElement = document.querySelector(`.note-item[data-id='${id}']`);
+    if (activeNoteElement) {
+        activeNoteElement.classList.add('active');
+    }
+}
+
 export function handleUserLogin(user) {
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
-    
-    const noteDocRef = doc(db, "notes", user.uid);
-    unsubscribeFromNotes = onSnapshot(noteDocRef, (doc) => {
-        if (doc.exists()) {
-            const data = doc.data();
-            if (noteInput.value !== data.content) {
-                noteInput.value = data.content;
-            }
-        } else {
-            setDoc(noteDocRef, { content: "" });
+
+    const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
+    const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
+
+    unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
+        const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderNotesList(notes);
+        if (notes.length > 0 && !currentNoteId) {
+            loadNote(notes[0].id, notes[0].title, notes[0].content);
+        } else if (notes.length === 0) {
+            currentNoteId = null;
         }
-        saveStatus.textContent = "All changes saved.";
     });
     showAppView();
 }
 
 // --- Data Functions ---
-function saveNote() {
+async function createNewNote() {
     if (!currentUser) return;
+    const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
+    const newNote = {
+        title: "Untitled Note",
+        content: "",
+        createdAt: new Date()
+    };
+    try {
+        const docRef = await addDoc(notesCollectionRef, newNote);
+        currentNoteId = docRef.id;
+    } catch (error) {
+        console.error("Error creating new note:", error);
+        showMessage("Failed to create new note.", 'error');
+    }
+}
+
+async function renameNote(noteId, currentTitle) {
+    const newTitle = prompt("Enter new title:", currentTitle);
+    if (newTitle && newTitle.trim() !== "") {
+        const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
+        try {
+            await setDoc(noteDocRef, { title: newTitle }, { merge: true });
+            showMessage("Note renamed.", 'success');
+        } catch (error) {
+            console.error("Error renaming note:", error);
+            showMessage("Failed to rename note.", 'error');
+        }
+    }
+}
+
+async function deleteNote(noteId) {
+    if (actionPending === `delete-${noteId}`) {
+        clearTimeout(actionTimer);
+        actionPending = null;
+        if (!currentUser || !noteId) return;
+        const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
+        try {
+            await deleteDoc(noteDocRef);
+            if (currentNoteId === noteId) {
+                currentNoteId = null;
+            }
+            showMessage("Note deleted.", 'success');
+        } catch (error) {
+            console.error("Error deleting note:", error);
+            showMessage("Failed to delete note.", 'error');
+        }
+    } else {
+        actionPending = `delete-${noteId}`;
+        showMessage("Click the trash icon again to confirm deletion.", 'info');
+        actionTimer = setTimeout(() => { actionPending = null; }, 5000);
+    }
+}
+
+function saveNote() {
+    if (!currentUser || !currentNoteId) return;
     saveStatus.textContent = "Saving...";
-    const noteDocRef = doc(db, "notes", currentUser.uid);
-    setDoc(noteDocRef, { content: noteInput.value }, { merge: true })
+    const noteDocRef = doc(db, "users", currentUser.uid, "notes", currentNoteId);
+    setDoc(noteDocRef, { title: noteTitle.value, content: noteInput.value }, { merge: true })
         .then(() => {
             saveStatus.textContent = "All changes saved.";
         })
@@ -86,25 +198,10 @@ function setupEventListeners() {
     document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
     document.getElementById('forgot-password-btn').addEventListener('click', () => resetPassword(emailInput.value));
 
+    noteTitle.addEventListener('input', debouncedSave);
     noteInput.addEventListener('input', debouncedSave);
 
-    const passwordToggleBtn = document.getElementById('password-toggle-btn');
-    const passwordToggleIcon = document.getElementById('password-toggle-icon');
-    
-    passwordToggleBtn.addEventListener('click', () => {
-        const isPassword = passwordInput.type === 'password';
-        if (isPassword) {
-            passwordInput.type = 'text';
-            passwordToggleIcon.classList.remove('fa-eye');
-            passwordToggleIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            passwordToggleIcon.classList.remove('fa-eye-slash');
-            passwordToggleIcon.classList.add('fa-eye');
-        }
-    });
-
-    // --- Utility Button Listeners with Custom Confirmation ---
+    document.getElementById('new-note-btn').addEventListener('click', createNewNote);
     document.getElementById('clear-all-btn').addEventListener('click', () => {
         if (actionPending === 'clear') {
             clearTimeout(actionTimer);
@@ -119,6 +216,22 @@ function setupEventListeners() {
             actionTimer = setTimeout(() => {
                 actionPending = null;
             }, 5000);
+        }
+    });
+
+    const passwordToggleBtn = document.getElementById('password-toggle-btn');
+    const passwordToggleIcon = document.getElementById('password-toggle-icon');
+
+    passwordToggleBtn.addEventListener('click', () => {
+        const isPassword = passwordInput.type === 'password';
+        if (isPassword) {
+            passwordInput.type = 'text';
+            passwordToggleIcon.classList.remove('fa-eye');
+            passwordToggleIcon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            passwordToggleIcon.classList.remove('fa-eye-slash');
+            passwordToggleIcon.classList.add('fa-eye');
         }
     });
 
