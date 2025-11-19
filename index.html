@@ -65,32 +65,50 @@
     </div>
 
     <!-- Notepad View (hidden by default) -->
-    <div id="app-view" class="view-container w-full h-full max-w-4xl mx-auto hidden opacity-0 scale-95">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-2xl p-6 md:p-8 flex flex-col h-full">
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight flex items-center">
-                    <img src="/assets/logo.png" alt="SyNote Logo" class="h-8 mr-2">
-                    <span>SyNote</span>
-                </h1>
-                <div class="flex items-center space-x-2">
-                    <button id="clear-all-btn" class="icon-btn" title="Clear All">
-                        <i class="fas fa-eraser"></i>
-                    </button>
-                    <button id="copy-all-btn" class="icon-btn" title="Copy All">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button id="paste-all-btn" class="icon-btn" title="Paste">
-                        <i class="fas fa-paste"></i>
-                    </button>
-                    <button id="sign-out-btn" class="icon-btn" title="Sign Out">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    </button>
+    <div id="app-view" class="view-container w-full h-full max-w-7xl mx-auto hidden opacity-0 scale-95">
+        <div class="flex h-full bg-white rounded-xl border border-gray-200 shadow-2xl relative">
+            <!-- Sidebar -->
+            <div id="sidebar" class="w-48 bg-gray-50 p-4 border-r border-gray-200 flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <img src="/assets/logo.png" alt="SyNote Logo" class="h-7 mr-2">
+                        <span>SyNote</span>
+                    </h1>
+                </div>
+                <button id="new-note-btn" class="w-full btn-primary py-2 rounded-lg font-semibold mb-4">New Note</button>
+                <div id="notes-list" class="flex-grow overflow-y-auto">
+                    <!-- Notes will be dynamically inserted here -->
                 </div>
             </div>
-            <div class="flex-grow flex flex-col">
-                <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
+
+            <!-- Main Content -->
+            <div id="main-content" class="flex-1 flex flex-col p-6">
+                <div id="content-overlay" class="hidden md:hidden"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <button id="menu-btn" class="icon-btn md:hidden">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <input type="text" id="note-title" class="text-3xl font-extrabold text-gray-800 tracking-tight w-full border-b-2 border-transparent focus:outline-none focus:border-blue-500" placeholder="Note Title">
+                    <div class="flex items-center space-x-2">
+                        <button id="clear-all-btn" class="icon-btn" title="Clear All">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                        <button id="copy-all-btn" class="icon-btn" title="Copy All">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button id="paste-all-btn" class="icon-btn" title="Paste">
+                            <i class="fas fa-paste"></i>
+                        </button>
+                        <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow flex flex-col">
+                    <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
+                </div>
+                <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
             </div>
-            <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
         </div>
     </div>
 
