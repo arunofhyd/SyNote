@@ -92,6 +92,11 @@ function loadNote(id, title, content) {
     if (activeNoteElement) {
         activeNoteElement.classList.add('active');
     }
+    // Close sidebar on mobile after selecting a note
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar').classList.remove('sidebar-open');
+        document.getElementById('content-overlay').classList.add('hidden');
+    }
 }
 
 export function handleUserLogin(user) {
@@ -124,7 +129,7 @@ async function createNewNote() {
     };
     try {
         const docRef = await addDoc(notesCollectionRef, newNote);
-        currentNoteId = docRef.id;
+        loadNote(docRef.id, newNote.title, newNote.content);
     } catch (error) {
         console.error("Error creating new note:", error);
         showMessage("Failed to create new note.", 'error');
@@ -201,6 +206,16 @@ function setupEventListeners() {
     noteTitle.addEventListener('input', debouncedSave);
     noteInput.addEventListener('input', debouncedSave);
 
+    document.getElementById('menu-btn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('sidebar-open');
+        document.getElementById('content-overlay').classList.toggle('hidden');
+    });
+
+    document.getElementById('content-overlay').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('sidebar-open');
+        document.getElementById('content-overlay').classList.add('hidden');
+    });
+
     document.getElementById('new-note-btn').addEventListener('click', createNewNote);
     document.getElementById('clear-all-btn').addEventListener('click', () => {
         if (actionPending === 'clear') {
@@ -221,7 +236,7 @@ function setupEventListeners() {
 
     const passwordToggleBtn = document.getElementById('password-toggle-btn');
     const passwordToggleIcon = document.getElementById('password-toggle-icon');
-
+    
     passwordToggleBtn.addEventListener('click', () => {
         const isPassword = passwordInput.type === 'password';
         if (isPassword) {
