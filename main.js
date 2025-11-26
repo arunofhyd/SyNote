@@ -14,6 +14,7 @@ const mainContainer = document.querySelector('.main-container');
 let currentUser = null;
 let currentNoteId = null;
 let unsubscribeFromNotes = null;
+let unsubscribeFromCurrentNote = null;
 let debounceTimer = null;
 let actionPending = null;
 let actionTimer = null;
@@ -75,15 +76,30 @@ function renderNotesList(notes) {
             e.stopPropagation();
             deleteNote(note.id);
         });
-        noteElement.addEventListener('click', () => loadNote(note.id, note.title, note.content));
+        noteElement.addEventListener('click', () => loadNote(note.id));
         notesList.appendChild(noteElement);
     });
 }
 
-function loadNote(id, title, content) {
+function loadNote(id) {
+    if (unsubscribeFromCurrentNote) {
+        unsubscribeFromCurrentNote();
+    }
+
     currentNoteId = id;
-    noteTitle.value = title;
-    noteInput.value = content;
+    const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
+
+    unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
+        if (docSnapshot.exists()) {
+            const noteData = docSnapshot.data();
+            const cursorPosition = noteInput.selectionStart;
+
+            noteTitle.value = noteData.title;
+            noteInput.value = noteData.content;
+
+            noteInput.setSelectionRange(cursorPosition, cursorPosition);
+        }
+    });
 
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.remove('active');
@@ -92,7 +108,6 @@ function loadNote(id, title, content) {
     if (activeNoteElement) {
         activeNoteElement.classList.add('active');
     }
-    // Close sidebar on mobile after selecting a note
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('sidebar-open');
         document.getElementById('content-overlay').classList.add('hidden');
@@ -110,7 +125,7 @@ export function handleUserLogin(user) {
         const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderNotesList(notes);
         if (notes.length > 0 && !currentNoteId) {
-            loadNote(notes[0].id, notes[0].title, notes[0].content);
+            loadNote(notes[0].id);
         } else if (notes.length === 0) {
             currentNoteId = null;
         }
@@ -129,7 +144,7 @@ async function createNewNote() {
     };
     try {
         const docRef = await addDoc(notesCollectionRef, newNote);
-        loadNote(docRef.id, newNote.title, newNote.content);
+        loadNote(docRef.id);
     } catch (error) {
         console.error("Error creating new note:", error);
         showMessage("Failed to create new note.", 'error');
