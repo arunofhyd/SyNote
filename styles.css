@@ -77,40 +77,61 @@ body {
 
 /* Sidebar Styles */
 #sidebar {
-    border-top-left-radius: 0.75rem; /* 12px */
-    border-bottom-left-radius: 0.75rem; /* 12px */
+    border-top-left-radius: 0.75rem;
+    border-bottom-left-radius: 0.75rem;
+    /* transition is handled by Tailwind classes in HTML now */
+}
+
+/* Custom Scrollbar for notes list */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 20px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #a0aec0;
 }
 
 #notes-list .note-item {
-    padding: 10px;
-    border-radius: 5px;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem; /* Rounded corners */
     cursor: pointer;
-    margin-bottom: 5px;
+    margin-bottom: 0.5rem;
     border: 1px solid transparent;
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #notes-list .note-item:hover {
-    background-color: #e2e8f0;
+    background-color: #f1f5f9; /* Lighter hover gray */
 }
 
 #notes-list .note-item.active {
-    background-color: #3b82f6;
-    color: white;
-    border-color: #2563eb;
+    background-color: #eff6ff; /* Light blue bg */
+    color: #1e40af; /* Dark blue text */
+    border-color: #bfdbfe;
+    font-weight: 500;
 }
 
 #notes-list .note-item-title {
-    font-weight: 600;
+    font-weight: 500;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-grow: 1;
+    font-size: 0.95rem;
 }
 
 .note-item-actions {
     display: flex;
-    gap: 5px;
+    gap: 0.5rem;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
 }
@@ -123,45 +144,50 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 2px;
+    padding: 0.25rem;
+    border-radius: 0.375rem;
+    color: #94a3b8;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.note-item-actions button:hover {
+    color: #475569;
+    background-color: #e2e8f0;
+}
+
+#notes-list .note-item.active .note-item-actions button {
+    color: #60a5fa;
+}
+
+#notes-list .note-item.active .note-item-actions button:hover {
+    color: #2563eb;
+    background-color: #dbeafe;
 }
 
 @media (max-width: 768px) {
     #note-title {
-        font-size: 1.5rem; /* Reduced font size for mobile */
-    }
-
-    #sidebar {
-        position: absolute;
-        left: -100%;
-        top: 0;
-        height: 100%;
-        z-index: 20; /* Ensure sidebar is on top */
-        transition: left 0.3s ease-in-out;
-        display: flex; /* Ensure flex properties apply */
+        font-size: 1.5rem;
     }
 
     #sidebar.sidebar-open {
-        left: 0;
+        transform: translateX(0);
     }
 
+    /* Ensure content overlay logic remains */
     #content-overlay {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 19; /* Below sidebar, above content */
-    }
-
-    #main-content {
-        width: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(2px);
+        z-index: 20; /* Below sidebar (30), above everything else */
+        opacity: 0;
+        animation: fadeIn 0.3s forwards;
     }
 }
 
-@media (min-width: 769px) {
-    #sidebar {
-        display: flex !important; /* Ensure it's always visible on desktop */
-    }
+@keyframes fadeIn {
+    to { opacity: 1; }
 }
