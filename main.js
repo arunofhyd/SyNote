@@ -10,6 +10,7 @@ const noteTitle = document.getElementById('note-title');
 const notesList = document.getElementById('notes-list');
 const saveStatus = document.getElementById('save-status');
 const mainContainer = document.querySelector('.main-container');
+const searchInput = document.getElementById('search-input'); // Added
 
 let currentUser = null;
 let currentNoteId = null;
@@ -18,6 +19,42 @@ let unsubscribeFromCurrentNote = null;
 let debounceTimer = null;
 let actionPending = null;
 let actionTimer = null;
+let allNotes = []; // Added: Store all notes for client-side search
+let searchDebounceTimer = null; // Added
+
+// --- Guest Mode Storage Helper ---
+const GuestStore = {
+    getKey: () => 'synote_guest_notes',
+    getAllNotes: () => {
+        const data = localStorage.getItem(GuestStore.getKey());
+        return data ? JSON.parse(data) : [];
+    },
+    saveAllNotes: (notes) => {
+        localStorage.setItem(GuestStore.getKey(), JSON.stringify(notes));
+    },
+    getNote: (id) => {
+        const notes = GuestStore.getAllNotes();
+        return notes.find(n => n.id === id);
+    },
+    addNote: (note) => {
+        const notes = GuestStore.getAllNotes();
+        notes.unshift(note);
+        GuestStore.saveAllNotes(notes);
+    },
+    updateNote: (id, updates) => {
+        const notes = GuestStore.getAllNotes();
+        const index = notes.findIndex(n => n.id === id);
+        if (index !== -1) {
+            notes[index] = { ...notes[index], ...updates };
+            GuestStore.saveAllNotes(notes);
+        }
+    },
+    deleteNote: (id) => {
+        const notes = GuestStore.getAllNotes();
+        const newNotes = notes.filter(n => n.id !== id);
+        GuestStore.saveAllNotes(newNotes);
+    }
+};
 
 // --- UI Functions ---
 export function showLoginView() {
@@ -43,11 +80,16 @@ export function showAppView() {
 function renderNotesList(notes) {
     notesList.innerHTML = '';
     if (notes.length === 0) {
-        notesList.innerHTML = '<p class="text-gray-500 text-center">No notes yet.</p>';
-        noteTitle.value = '';
-        noteInput.value = '';
-        noteTitle.disabled = true;
-        noteInput.disabled = true;
+        // Customize message if searching
+        if (searchInput.value.trim() !== '') {
+            notesList.innerHTML = '<p class="text-gray-500 text-center mt-4">No matching notes found.</p>';
+        } else {
+            notesList.innerHTML = '<p class="text-gray-500 text-center mt-4">No notes yet.</p>';
+            noteTitle.value = '';
+            noteInput.value = '';
+            noteTitle.disabled = true;
+            noteInput.disabled = true;
+        }
         return;
     }
 
@@ -84,23 +126,74 @@ function renderNotesList(notes) {
 function loadNote(id) {
     if (unsubscribeFromCurrentNote) {
         unsubscribeFromCurrentNote();
+        unsubscribeFromCurrentNote = null;
     }
 
     currentNoteId = id;
+
+    // Shared Logic for Content Processing
+    const processNoteContent = (noteData) => {
+        const cursorPosition = noteInput.selectionStart; // This might reset if we change value, but helpful for typing
+        noteTitle.value = noteData.title;
+
+        let content = "";
+        if (noteData.isCompressed && noteData.content) {
+            const decompressed = LZString.decompressFromUTF16(noteData.content);
+            content = decompressed !== null ? decompressed : "";
+        } else {
+            content = noteData.content || "";
+        }
+        noteInput.value = content;
+
+        // --- Search Highlighting Logic ---
+        const query = searchInput.value.trim().toLowerCase();
+        if (query) {
+            const lowerContent = content.toLowerCase();
+            const index = lowerContent.indexOf(query);
+            if (index !== -1) {
+                // Focus and select the text
+                setTimeout(() => {
+                     noteInput.focus();
+                     noteInput.setSelectionRange(index, index + query.length);
+                     // Calculate scroll position roughly (textarea scrolling is tricky to center exactly without libs)
+                     // But setSelectionRange usually scrolls into view if focused.
+                     const blurHandler = () => {
+                        noteInput.blur(); // Remove focus to show selection clearly? No, standard selection shows blue.
+                     };
+                     // Just focusing is enough.
+                }, 100);
+            } else {
+                 // Restore cursor if no match found (standard behavior)
+                 noteInput.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        } else {
+             noteInput.setSelectionRange(cursorPosition, cursorPosition);
+        }
+    };
+
+    // Guest Mode Logic
+    if (currentUser && currentUser.isAnonymous) {
+        const noteData = GuestStore.getNote(id);
+        if (noteData) {
+            processNoteContent(noteData);
+        }
+        updateActiveNoteInList(id);
+        return;
+    }
+
+    // Firestore Logic
     const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
 
     unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
         if (docSnapshot.exists()) {
-            const noteData = docSnapshot.data();
-            const cursorPosition = noteInput.selectionStart;
-
-            noteTitle.value = noteData.title;
-            noteInput.value = noteData.content;
-
-            noteInput.setSelectionRange(cursorPosition, cursorPosition);
+            processNoteContent(docSnapshot.data());
         }
     });
 
+    updateActiveNoteInList(id);
+}
+
+function updateActiveNoteInList(id) {
     document.querySelectorAll('.note-item').forEach(item => {
         item.classList.remove('active');
     });
@@ -118,32 +211,110 @@ export function handleUserLogin(user) {
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
 
+    // Reset Search
+    searchInput.value = '';
+
+    if (user.isAnonymous) {
+        // Load notes from local storage
+        allNotes = GuestStore.getAllNotes(); // Store globally
+        renderNotesList(allNotes);
+        if (allNotes.length > 0 && !currentNoteId) {
+            loadNote(allNotes[0].id);
+        } else if (allNotes.length === 0) {
+            currentNoteId = null;
+        }
+        showAppView();
+        return;
+    }
+
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
     const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
     unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
-        const notes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderNotesList(notes);
-        if (notes.length > 0 && !currentNoteId) {
-            loadNote(notes[0].id);
-        } else if (notes.length === 0) {
-            currentNoteId = null;
+        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Store globally
+
+        // Apply search filter if active
+        const query = searchInput.value.trim().toLowerCase();
+        if (query) {
+             performSearch(query);
+        } else {
+             renderNotesList(allNotes);
+             // Logic to load first note if none selected or if list changed significantly?
+             // Only if currentNoteId is null (first load)
+             if (allNotes.length > 0 && !currentNoteId) {
+                 loadNote(allNotes[0].id);
+             } else if (allNotes.length === 0) {
+                 currentNoteId = null;
+             }
         }
     });
     showAppView();
 }
 
+// --- Search Logic ---
+function performSearch(query) {
+    if (!query) {
+        renderNotesList(allNotes);
+        return;
+    }
+
+    const lowerQuery = query.toLowerCase();
+
+    const filteredNotes = allNotes.filter(note => {
+        // 1. Check Title
+        if (note.title && note.title.toLowerCase().includes(lowerQuery)) {
+            return true;
+        }
+
+        // 2. Check Content (Decompress if needed)
+        let content = "";
+        if (note.isCompressed && note.content) {
+            // Optimization: Maybe cache decompressed text?
+            // For now, doing it on fly.
+            const decompressed = LZString.decompressFromUTF16(note.content);
+            content = decompressed !== null ? decompressed : "";
+        } else {
+            content = note.content || "";
+        }
+
+        return content.toLowerCase().includes(lowerQuery);
+    });
+
+    renderNotesList(filteredNotes);
+}
+
 // --- Data Functions ---
 async function createNewNote() {
     if (!currentUser) return;
-    const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
+
+    const compressedContent = LZString.compressToUTF16("");
     const newNote = {
         title: "Untitled Note",
-        content: "",
-        createdAt: new Date()
+        content: compressedContent,
+        isCompressed: true,
+        createdAt: currentUser.isAnonymous ? new Date().toISOString() : new Date()
     };
+
+    if (currentUser.isAnonymous) {
+        const id = 'guest_' + Date.now();
+        newNote.id = id;
+        GuestStore.addNote(newNote);
+        allNotes = GuestStore.getAllNotes(); // Update global list
+
+        // If search is active, clear it to show new note? Or just render?
+        // Usually creating a note clears search or jumps to it.
+        searchInput.value = '';
+        renderNotesList(allNotes);
+        loadNote(id);
+        return;
+    }
+
+    const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
     try {
         const docRef = await addDoc(notesCollectionRef, newNote);
+        // Firestore listener will update allNotes and UI
+        // We manually load the note to be responsive
+        searchInput.value = ''; // Clear search
         loadNote(docRef.id);
     } catch (error) {
         console.error("Error creating new note:", error);
@@ -154,6 +325,20 @@ async function createNewNote() {
 async function renameNote(noteId, currentTitle) {
     const newTitle = prompt("Enter new title:", currentTitle);
     if (newTitle && newTitle.trim() !== "") {
+        if (currentUser.isAnonymous) {
+            GuestStore.updateNote(noteId, { title: newTitle });
+            allNotes = GuestStore.getAllNotes(); // Update global list
+
+            // Re-apply search or render all
+            const query = searchInput.value.trim().toLowerCase();
+            if (query) performSearch(query);
+            else renderNotesList(allNotes);
+
+            if (currentNoteId === noteId) noteTitle.value = newTitle;
+            showMessage("Note renamed.", 'success');
+            return;
+        }
+
         const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
         try {
             await setDoc(noteDocRef, { title: newTitle }, { merge: true });
@@ -170,6 +355,30 @@ async function deleteNote(noteId) {
         clearTimeout(actionTimer);
         actionPending = null;
         if (!currentUser || !noteId) return;
+
+        if (currentUser.isAnonymous) {
+            GuestStore.deleteNote(noteId);
+            allNotes = GuestStore.getAllNotes(); // Update global
+
+            if (currentNoteId === noteId) {
+                currentNoteId = null;
+            }
+
+            const query = searchInput.value.trim().toLowerCase();
+            if (query) performSearch(query);
+            else renderNotesList(allNotes);
+
+            // If current note deleted, load next visible note?
+            // Simple logic: if filtered list has items, load first.
+            const visibleNotes = query ? allNotes.filter(/*...re-run filter...*/) : allNotes;
+            // Actually performSearch calls renderNotesList but doesn't return list.
+            // Let's rely on user clicking another note for now or basic 'if null load first'
+            // The renderNotesList clears inputs if empty.
+
+            showMessage("Note deleted.", 'success');
+            return;
+        }
+
         const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
         try {
             await deleteDoc(noteDocRef);
@@ -191,8 +400,39 @@ async function deleteNote(noteId) {
 function saveNote() {
     if (!currentUser || !currentNoteId) return;
     saveStatus.textContent = "Saving...";
+
+    const contentToSave = LZString.compressToUTF16(noteInput.value);
+
+    if (currentUser.isAnonymous) {
+        GuestStore.updateNote(currentNoteId, {
+            title: noteTitle.value,
+            content: contentToSave,
+            isCompressed: true
+        });
+        // Update local memory of notes immediately for search consistency?
+        // Ideally yes.
+        const noteIndex = allNotes.findIndex(n => n.id === currentNoteId);
+        if (noteIndex !== -1) {
+            allNotes[noteIndex].title = noteTitle.value;
+            allNotes[noteIndex].content = contentToSave;
+            allNotes[noteIndex].isCompressed = true;
+        }
+
+        saveStatus.textContent = "All changes saved (Local).";
+
+        const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
+        if (item) item.textContent = noteTitle.value || 'Untitled Note';
+
+        return;
+    }
+
     const noteDocRef = doc(db, "users", currentUser.uid, "notes", currentNoteId);
-    setDoc(noteDocRef, { title: noteTitle.value, content: noteInput.value }, { merge: true })
+
+    setDoc(noteDocRef, {
+        title: noteTitle.value,
+        content: contentToSave,
+        isCompressed: true
+    }, { merge: true })
         .then(() => {
             saveStatus.textContent = "All changes saved.";
         })
@@ -210,6 +450,7 @@ function debouncedSave() {
 
 // --- Event Listeners ---
 function setupEventListeners() {
+    // ... (Existing Auth Listeners) ...
     const emailInput = document.getElementById('email-input');
     const passwordInput = document.getElementById('password-input');
     
@@ -218,8 +459,20 @@ function setupEventListeners() {
     document.getElementById('google-signin-btn').addEventListener('click', signInWithGoogle);
     document.getElementById('forgot-password-btn').addEventListener('click', () => resetPassword(emailInput.value));
 
+    document.getElementById('guest-signin-btn').addEventListener('click', () => {
+        handleUserLogin({ uid: 'guest', isAnonymous: true });
+    });
+
     noteTitle.addEventListener('input', debouncedSave);
     noteInput.addEventListener('input', debouncedSave);
+
+    // Search Listener
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            performSearch(e.target.value.trim());
+        }, 300);
+    });
 
     document.getElementById('menu-btn').addEventListener('click', () => {
         document.getElementById('sidebar').classList.toggle('sidebar-open');
@@ -269,7 +522,16 @@ function setupEventListeners() {
         if (actionPending === 'signout') {
             clearTimeout(actionTimer);
             actionPending = null;
-            appSignOut();
+            if (currentUser.isAnonymous) {
+                currentUser = null;
+                allNotes = []; // Clear data
+                showLoginView();
+                noteTitle.value = '';
+                noteInput.value = '';
+                notesList.innerHTML = '';
+            } else {
+                appSignOut();
+            }
         } else {
             actionPending = 'signout';
             showMessage("Click again to sign out.", 'info');
