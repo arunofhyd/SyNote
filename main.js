@@ -500,17 +500,24 @@ function setupEventListeners() {
 
     document.getElementById('new-note-btn').addEventListener('click', createNewNote);
 
-    document.getElementById('settings-btn').addEventListener('click', () => {
+    document.getElementById('settings-btn').addEventListener('click', function() {
         const bubble = document.getElementById('settings-bubble');
         bubble.classList.toggle('hidden');
+        this.classList.toggle('bg-accent');
+        this.classList.toggle('text-accent-foreground');
     });
 
     document.getElementById('rename-note-btn').addEventListener('click', () => {
         if (currentNoteId) {
-             // Find current title
-             const currentNote = allNotes.find(n => n.id === currentNoteId);
-             const title = currentNote ? currentNote.title : noteTitle.value;
-             renameNote(currentNoteId, title);
+            // Close the bubble and reset settings button state
+            const bubble = document.getElementById('settings-bubble');
+            bubble.classList.add('hidden');
+            const settingsBtn = document.getElementById('settings-btn');
+            settingsBtn.classList.remove('bg-accent', 'text-accent-foreground');
+
+            // Focus and select title input
+            noteTitle.focus();
+            noteTitle.select();
         } else {
             showMessage("No note selected.", 'error');
         }
