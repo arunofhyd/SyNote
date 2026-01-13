@@ -622,7 +622,7 @@ export function showMessage(msg, type = 'info') {
     messageText.textContent = msg;
 
     // Shadcn toast style
-    messageDisplay.className = 'fixed bottom-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg border transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 text-sm';
+    messageDisplay.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:bottom-5 md:right-5 z-50 px-4 py-3 rounded-md shadow-lg border transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 text-sm w-[90%] md:w-auto justify-center md:justify-start';
 
     if (type === 'error') {
         messageDisplay.classList.add('bg-destructive', 'text-destructive-foreground', 'border-destructive');
