@@ -113,19 +113,7 @@ function renderNotesList(notes) {
         }
         noteElement.innerHTML = `
             <span class="note-item-title truncate flex-1 mr-2">${note.title || 'Untitled Note'}</span>
-            <div class="note-item-actions flex gap-1">
-                <button class="rename-note-btn p-1 rounded-sm hover:bg-background text-muted-foreground hover:text-foreground transition-colors"><i class="fas fa-pencil-alt text-xs"></i></button>
-                <button class="delete-note-btn p-1 rounded-sm hover:bg-background text-muted-foreground hover:text-destructive transition-colors"><i class="fas fa-trash text-xs"></i></button>
-            </div>
         `;
-        noteElement.querySelector('.rename-note-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            renameNote(note.id, note.title);
-        });
-        noteElement.querySelector('.delete-note-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteNote(note.id);
-        });
         noteElement.addEventListener('click', () => loadNote(note.id));
         notesList.appendChild(noteElement);
     });
@@ -511,7 +499,33 @@ function setupEventListeners() {
     });
 
     document.getElementById('new-note-btn').addEventListener('click', createNewNote);
+
+    document.getElementById('settings-btn').addEventListener('click', () => {
+        const bubble = document.getElementById('settings-bubble');
+        bubble.classList.toggle('hidden');
+    });
+
+    document.getElementById('rename-note-btn').addEventListener('click', () => {
+        if (currentNoteId) {
+             // Find current title
+             const currentNote = allNotes.find(n => n.id === currentNoteId);
+             const title = currentNote ? currentNote.title : noteTitle.value;
+             renameNote(currentNoteId, title);
+        } else {
+            showMessage("No note selected.", 'error');
+        }
+    });
+
+    document.getElementById('delete-note-btn').addEventListener('click', () => {
+        if (currentNoteId) {
+            deleteNote(currentNoteId);
+        } else {
+            showMessage("No note selected.", 'error');
+        }
+    });
+
     document.getElementById('clear-all-btn').addEventListener('click', () => {
+        if (!currentNoteId) return;
         if (actionPending === 'clear') {
             clearTimeout(actionTimer);
             actionPending = null;
