@@ -354,7 +354,7 @@ async function deleteNote(noteId) {
         }
     } else {
         actionPending = `delete-${noteId}`;
-        showMessage("Click the trash icon again to confirm deletion.", 'info');
+        showMessage("Click again to confirm Deletion!", 'info');
         actionTimer = setTimeout(() => { actionPending = null; }, 5000);
     }
 }
@@ -541,7 +541,7 @@ function setupEventListeners() {
             showMessage("Note cleared.", 'success');
         } else {
             actionPending = 'clear';
-            showMessage("Click again to erase this note.", 'info');
+            showMessage("Click again to Erase this note!", 'info');
             clearTimeout(actionTimer);
             actionTimer = setTimeout(() => {
                 actionPending = null;
