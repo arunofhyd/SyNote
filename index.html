@@ -85,13 +85,7 @@
 </head>
 <body class="bg-background text-foreground antialiased min-h-screen flex flex-col">
 
-<!-- Theme Toggle (Floating for Login View access) -->
-<div class="absolute top-4 right-4 z-50">
-    <button id="global-theme-toggle" class="h-10 w-10 inline-flex items-center justify-center rounded-full bg-card text-foreground border border-border shadow-sm hover:bg-accent hover:text-accent-foreground transition-all">
-         <i class="fas fa-moon dark:hidden"></i>
-         <i class="fas fa-sun hidden dark:block"></i>
-    </button>
-</div>
+<!-- Theme Toggle Removed as per request (was floating) -->
 
 <div class="main-container flex-grow p-4 md:p-8">
 
@@ -160,8 +154,8 @@
                         <img src="/assets/logo.png" alt="SyNote Logo" class="h-6 w-6">
                         <span>SyNote</span>
                     </div>
-                    <!-- Sidebar Theme Toggle (Hidden on mobile if covered, but kept for desktop convenience) -->
-                    <button id="sidebar-theme-toggle" class="h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <!-- Sidebar Theme Toggle (Visible in both modes) -->
+                    <button id="sidebar-theme-toggle" class="h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                          <i class="fas fa-moon dark:hidden"></i>
                          <i class="fas fa-sun hidden dark:block"></i>
                     </button>
@@ -212,7 +206,7 @@
                 </header>
 
                 <div class="flex-grow relative">
-                    <textarea id="note-input" class="w-full h-full resize-none p-6 bg-transparent border-0 focus:ring-0 text-base leading-relaxed placeholder:text-muted-foreground" placeholder="Start typing..."></textarea>
+                    <textarea id="note-input" class="w-full h-full resize-none p-6 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-base leading-relaxed placeholder:text-muted-foreground" placeholder="Start typing..."></textarea>
                 </div>
 
                 <div class="absolute bottom-4 right-6 text-xs text-muted-foreground pointer-events-none">
