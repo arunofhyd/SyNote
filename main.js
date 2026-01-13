@@ -10,7 +10,7 @@ const noteTitle = document.getElementById('note-title');
 const notesList = document.getElementById('notes-list');
 const saveStatus = document.getElementById('save-status');
 const mainContainer = document.querySelector('.main-container');
-const searchInput = document.getElementById('search-input'); // Added
+const searchInput = document.getElementById('search-input');
 
 let currentUser = null;
 let currentNoteId = null;
@@ -19,8 +19,16 @@ let unsubscribeFromCurrentNote = null;
 let debounceTimer = null;
 let actionPending = null;
 let actionTimer = null;
-let allNotes = []; // Added: Store all notes for client-side search
-let searchDebounceTimer = null; // Added
+let allNotes = [];
+let searchDebounceTimer = null;
+
+// --- Theme Logic ---
+// Theme initialization is now handled in index.html head to prevent FOUC
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
 
 // --- Guest Mode Storage Helper ---
 const GuestStore = {
@@ -80,11 +88,10 @@ export function showAppView() {
 function renderNotesList(notes) {
     notesList.innerHTML = '';
     if (notes.length === 0) {
-        // Customize message if searching
         if (searchInput.value.trim() !== '') {
-            notesList.innerHTML = '<p class="text-gray-500 text-center mt-4">No matching notes found.</p>';
+            notesList.innerHTML = '<p class="text-muted-foreground text-center mt-4 text-sm">No matching notes found.</p>';
         } else {
-            notesList.innerHTML = '<p class="text-gray-500 text-center mt-4">No notes yet.</p>';
+            notesList.innerHTML = '<p class="text-muted-foreground text-center mt-4 text-sm">No notes yet.</p>';
             noteTitle.value = '';
             noteInput.value = '';
             noteTitle.disabled = true;
@@ -98,16 +105,17 @@ function renderNotesList(notes) {
 
     notes.forEach(note => {
         const noteElement = document.createElement('div');
-        noteElement.classList.add('note-item', 'flex', 'justify-between', 'items-center');
+        // Updated styling to match shadcn ghost/accent button look
+        noteElement.classList.add('note-item', 'flex', 'justify-between', 'items-center', 'rounded-md', 'px-3', 'py-2', 'text-sm', 'cursor-pointer', 'transition-colors', 'hover:bg-accent', 'hover:text-accent-foreground', 'group');
         noteElement.dataset.id = note.id;
         if (note.id === currentNoteId) {
-            noteElement.classList.add('active');
+            noteElement.classList.add('bg-accent', 'text-accent-foreground', 'font-medium');
         }
         noteElement.innerHTML = `
-            <h3 class="note-item-title">${note.title || 'Untitled Note'}</h3>
-            <div class="note-item-actions">
-                <button class="rename-note-btn"><i class="fas fa-pencil-alt"></i></button>
-                <button class="delete-note-btn"><i class="fas fa-trash"></i></button>
+            <span class="note-item-title truncate flex-1 mr-2">${note.title || 'Untitled Note'}</span>
+            <div class="note-item-actions flex gap-1">
+                <button class="rename-note-btn p-1 rounded-sm hover:bg-background text-muted-foreground hover:text-foreground transition-colors"><i class="fas fa-pencil-alt text-xs"></i></button>
+                <button class="delete-note-btn p-1 rounded-sm hover:bg-background text-muted-foreground hover:text-destructive transition-colors"><i class="fas fa-trash text-xs"></i></button>
             </div>
         `;
         noteElement.querySelector('.rename-note-btn').addEventListener('click', (e) => {
@@ -131,9 +139,8 @@ function loadNote(id) {
 
     currentNoteId = id;
 
-    // Shared Logic for Content Processing
     const processNoteContent = (noteData) => {
-        const cursorPosition = noteInput.selectionStart; // This might reset if we change value, but helpful for typing
+        const cursorPosition = noteInput.selectionStart;
         noteTitle.value = noteData.title;
 
         let content = "";
@@ -145,25 +152,16 @@ function loadNote(id) {
         }
         noteInput.value = content;
 
-        // --- Search Highlighting Logic ---
         const query = searchInput.value.trim().toLowerCase();
         if (query) {
             const lowerContent = content.toLowerCase();
             const index = lowerContent.indexOf(query);
             if (index !== -1) {
-                // Focus and select the text
                 setTimeout(() => {
                      noteInput.focus();
                      noteInput.setSelectionRange(index, index + query.length);
-                     // Calculate scroll position roughly (textarea scrolling is tricky to center exactly without libs)
-                     // But setSelectionRange usually scrolls into view if focused.
-                     const blurHandler = () => {
-                        noteInput.blur(); // Remove focus to show selection clearly? No, standard selection shows blue.
-                     };
-                     // Just focusing is enough.
                 }, 100);
             } else {
-                 // Restore cursor if no match found (standard behavior)
                  noteInput.setSelectionRange(cursorPosition, cursorPosition);
             }
         } else {
@@ -171,7 +169,6 @@ function loadNote(id) {
         }
     };
 
-    // Guest Mode Logic
     if (currentUser && currentUser.isAnonymous) {
         const noteData = GuestStore.getNote(id);
         if (noteData) {
@@ -181,7 +178,6 @@ function loadNote(id) {
         return;
     }
 
-    // Firestore Logic
     const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
 
     unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
@@ -195,14 +191,15 @@ function loadNote(id) {
 
 function updateActiveNoteInList(id) {
     document.querySelectorAll('.note-item').forEach(item => {
-        item.classList.remove('active');
+        item.classList.remove('bg-accent', 'text-accent-foreground', 'font-medium');
     });
     const activeNoteElement = document.querySelector(`.note-item[data-id='${id}']`);
     if (activeNoteElement) {
-        activeNoteElement.classList.add('active');
+        activeNoteElement.classList.add('bg-accent', 'text-accent-foreground', 'font-medium');
     }
     if (window.innerWidth <= 768) {
         document.getElementById('sidebar').classList.remove('sidebar-open');
+        document.getElementById('sidebar').classList.add('-translate-x-full'); // Ensure it closes on mobile
         document.getElementById('content-overlay').classList.add('hidden');
     }
 }
@@ -211,12 +208,10 @@ export function handleUserLogin(user) {
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
 
-    // Reset Search
     searchInput.value = '';
 
     if (user.isAnonymous) {
-        // Load notes from local storage
-        allNotes = GuestStore.getAllNotes(); // Store globally
+        allNotes = GuestStore.getAllNotes();
         renderNotesList(allNotes);
         if (allNotes.length > 0 && !currentNoteId) {
             loadNote(allNotes[0].id);
@@ -231,16 +226,13 @@ export function handleUserLogin(user) {
     const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
     unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
-        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Store globally
+        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Apply search filter if active
         const query = searchInput.value.trim().toLowerCase();
         if (query) {
              performSearch(query);
         } else {
              renderNotesList(allNotes);
-             // Logic to load first note if none selected or if list changed significantly?
-             // Only if currentNoteId is null (first load)
              if (allNotes.length > 0 && !currentNoteId) {
                  loadNote(allNotes[0].id);
              } else if (allNotes.length === 0) {
@@ -251,7 +243,6 @@ export function handleUserLogin(user) {
     showAppView();
 }
 
-// --- Search Logic ---
 function performSearch(query) {
     if (!query) {
         renderNotesList(allNotes);
@@ -261,16 +252,12 @@ function performSearch(query) {
     const lowerQuery = query.toLowerCase();
 
     const filteredNotes = allNotes.filter(note => {
-        // 1. Check Title
         if (note.title && note.title.toLowerCase().includes(lowerQuery)) {
             return true;
         }
 
-        // 2. Check Content (Decompress if needed)
         let content = "";
         if (note.isCompressed && note.content) {
-            // Optimization: Maybe cache decompressed text?
-            // For now, doing it on fly.
             const decompressed = LZString.decompressFromUTF16(note.content);
             content = decompressed !== null ? decompressed : "";
         } else {
@@ -283,7 +270,6 @@ function performSearch(query) {
     renderNotesList(filteredNotes);
 }
 
-// --- Data Functions ---
 async function createNewNote() {
     if (!currentUser) return;
 
@@ -299,10 +285,8 @@ async function createNewNote() {
         const id = 'guest_' + Date.now();
         newNote.id = id;
         GuestStore.addNote(newNote);
-        allNotes = GuestStore.getAllNotes(); // Update global list
+        allNotes = GuestStore.getAllNotes();
 
-        // If search is active, clear it to show new note? Or just render?
-        // Usually creating a note clears search or jumps to it.
         searchInput.value = '';
         renderNotesList(allNotes);
         loadNote(id);
@@ -312,9 +296,7 @@ async function createNewNote() {
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
     try {
         const docRef = await addDoc(notesCollectionRef, newNote);
-        // Firestore listener will update allNotes and UI
-        // We manually load the note to be responsive
-        searchInput.value = ''; // Clear search
+        searchInput.value = '';
         loadNote(docRef.id);
     } catch (error) {
         console.error("Error creating new note:", error);
@@ -327,9 +309,8 @@ async function renameNote(noteId, currentTitle) {
     if (newTitle && newTitle.trim() !== "") {
         if (currentUser.isAnonymous) {
             GuestStore.updateNote(noteId, { title: newTitle });
-            allNotes = GuestStore.getAllNotes(); // Update global list
+            allNotes = GuestStore.getAllNotes();
 
-            // Re-apply search or render all
             const query = searchInput.value.trim().toLowerCase();
             if (query) performSearch(query);
             else renderNotesList(allNotes);
@@ -358,7 +339,7 @@ async function deleteNote(noteId) {
 
         if (currentUser.isAnonymous) {
             GuestStore.deleteNote(noteId);
-            allNotes = GuestStore.getAllNotes(); // Update global
+            allNotes = GuestStore.getAllNotes();
 
             if (currentNoteId === noteId) {
                 currentNoteId = null;
@@ -367,13 +348,6 @@ async function deleteNote(noteId) {
             const query = searchInput.value.trim().toLowerCase();
             if (query) performSearch(query);
             else renderNotesList(allNotes);
-
-            // If current note deleted, load next visible note?
-            // Simple logic: if filtered list has items, load first.
-            const visibleNotes = query ? allNotes.filter(/*...re-run filter...*/) : allNotes;
-            // Actually performSearch calls renderNotesList but doesn't return list.
-            // Let's rely on user clicking another note for now or basic 'if null load first'
-            // The renderNotesList clears inputs if empty.
 
             showMessage("Note deleted.", 'success');
             return;
@@ -409,8 +383,6 @@ function saveNote() {
             content: contentToSave,
             isCompressed: true
         });
-        // Update local memory of notes immediately for search consistency?
-        // Ideally yes.
         const noteIndex = allNotes.findIndex(n => n.id === currentNoteId);
         if (noteIndex !== -1) {
             allNotes[noteIndex].title = noteTitle.value;
@@ -418,7 +390,7 @@ function saveNote() {
             allNotes[noteIndex].isCompressed = true;
         }
 
-        saveStatus.textContent = "All changes saved (Local).";
+        saveStatus.textContent = "Saved (Local)";
 
         const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
         if (item) item.textContent = noteTitle.value || 'Untitled Note';
@@ -434,7 +406,7 @@ function saveNote() {
         isCompressed: true
     }, { merge: true })
         .then(() => {
-            saveStatus.textContent = "All changes saved.";
+            saveStatus.textContent = "Saved";
         })
         .catch(error => {
             console.error("Error saving note:", error);
@@ -450,7 +422,6 @@ function debouncedSave() {
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    // ... (Existing Auth Listeners) ...
     const emailInput = document.getElementById('email-input');
     const passwordInput = document.getElementById('password-input');
     
@@ -466,7 +437,55 @@ function setupEventListeners() {
     noteTitle.addEventListener('input', debouncedSave);
     noteInput.addEventListener('input', debouncedSave);
 
-    // Search Listener
+    // Auto-math evaluation
+    noteInput.addEventListener('keydown', (e) => {
+        if (e.key === '=' || e.key === 'Enter') {
+            // Check if we should calculate. Simple check: last non-whitespace char is a digit or ')'
+            // We use setTimeout to let the character be inserted first if it's '='
+            setTimeout(() => {
+                const val = noteInput.value;
+                const cursorPos = noteInput.selectionStart;
+
+                // If enter was pressed, we might be on a new line, so check previous line
+                // If = was pressed, we are right after it.
+                // This logic is simplified for now. The previous memory says "When a user types an expression ending with an equals sign ('=')"
+
+                if (e.key === '=') {
+                    // Look backwards from cursor
+                    const textBeforeCursor = val.substring(0, cursorPos);
+                    // Find the expression.
+                    // This is a naive implementation; a robust one would parse carefully.
+                    // Let's assume the expression is on the same line.
+                    const lines = textBeforeCursor.split('\n');
+                    const currentLine = lines[lines.length - 1];
+                    // Remove the trailing '='
+                    const expression = currentLine.slice(0, -1).trim();
+
+                    if (expression && /[\d)]$/.test(expression)) {
+                        try {
+                           const parser = new exprEval.Parser();
+                           const result = parser.evaluate(expression);
+                           if (result !== undefined && !isNaN(result)) {
+                               // Append result
+                               const newVal = val.substring(0, cursorPos) + " " + result + val.substring(cursorPos);
+                               noteInput.value = newVal;
+                               noteInput.setSelectionRange(cursorPos + String(result).length + 1, cursorPos + String(result).length + 1);
+
+                               // Add glow effect
+                               noteInput.classList.add('result-glow-animate');
+                               setTimeout(() => noteInput.classList.remove('result-glow-animate'), 1000);
+
+                               saveNote();
+                           }
+                        } catch (err) {
+                           // Ignore evaluation errors
+                        }
+                    }
+                }
+            }, 0);
+        }
+    });
+
     searchInput.addEventListener('input', (e) => {
         clearTimeout(searchDebounceTimer);
         searchDebounceTimer = setTimeout(() => {
@@ -475,12 +494,19 @@ function setupEventListeners() {
     });
 
     document.getElementById('menu-btn').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('sidebar-open');
-        document.getElementById('content-overlay').classList.toggle('hidden');
+        const sidebar = document.getElementById('sidebar');
+        // Toggle transform classes
+        if (sidebar.classList.contains('-translate-x-full')) {
+             sidebar.classList.remove('-translate-x-full');
+             document.getElementById('content-overlay').classList.remove('hidden');
+        } else {
+             sidebar.classList.add('-translate-x-full');
+             document.getElementById('content-overlay').classList.add('hidden');
+        }
     });
 
     document.getElementById('content-overlay').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.remove('sidebar-open');
+        document.getElementById('sidebar').classList.add('-translate-x-full');
         document.getElementById('content-overlay').classList.add('hidden');
     });
 
@@ -494,12 +520,17 @@ function setupEventListeners() {
             showMessage("Note cleared.", 'success');
         } else {
             actionPending = 'clear';
-            showMessage("Click again to confirm clearing the note.", 'info');
+            showMessage("Click again to confirm.", 'info');
             clearTimeout(actionTimer);
             actionTimer = setTimeout(() => {
                 actionPending = null;
             }, 5000);
         }
+    });
+
+    // Theme toggle listeners
+    document.querySelectorAll('#global-theme-toggle, #sidebar-theme-toggle').forEach(btn => {
+        btn.addEventListener('click', toggleTheme);
     });
 
     const passwordToggleBtn = document.getElementById('password-toggle-btn');
@@ -524,7 +555,7 @@ function setupEventListeners() {
             actionPending = null;
             if (currentUser.isAnonymous) {
                 currentUser = null;
-                allNotes = []; // Clear data
+                allNotes = [];
                 showLoginView();
                 noteTitle.value = '';
                 noteInput.value = '';
@@ -545,7 +576,7 @@ function setupEventListeners() {
     document.getElementById('copy-all-btn').addEventListener('click', () => {
         if (noteInput.value) {
             navigator.clipboard.writeText(noteInput.value)
-                .then(() => showMessage("Copied to clipboard!", 'success'))
+                .then(() => showMessage("Copied!", 'success'))
                 .catch(err => showMessage("Failed to copy.", 'error'));
         }
     });
@@ -555,10 +586,10 @@ function setupEventListeners() {
             const text = await navigator.clipboard.readText();
             if (text) {
                 noteInput.value += text;
-                saveNote(); // Save the new content immediately
+                saveNote();
             }
         } catch (err) {
-            showMessage("Failed to paste from clipboard.", 'error');
+            showMessage("Failed to paste.", 'error');
         }
     });
 }
@@ -568,16 +599,25 @@ export function showMessage(msg, type = 'info') {
     const messageDisplay = document.getElementById('message-display');
     const messageText = document.getElementById('message-text');
     messageText.textContent = msg;
-    messageDisplay.className = 'fixed bottom-5 right-5 z-50 px-4 py-3 rounded-lg shadow-md transition-opacity duration-300';
+
+    // Shadcn toast style
+    messageDisplay.className = 'fixed bottom-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg border transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 text-sm';
+
     if (type === 'error') {
-        messageDisplay.classList.add('bg-red-100', 'border', 'border-red-400', 'text-red-700');
+        messageDisplay.classList.add('bg-destructive', 'text-destructive-foreground', 'border-destructive');
     } else if (type === 'info') {
-        messageDisplay.classList.add('bg-blue-100', 'border', 'border-blue-400', 'text-blue-700');
+        messageDisplay.classList.add('bg-background', 'text-foreground', 'border-border');
     } else {
-        messageDisplay.classList.add('bg-green-100', 'border', 'border-green-400', 'text-green-700');
+        messageDisplay.classList.add('bg-background', 'text-foreground', 'border-border');
+        // Success could be green, but shadcn usually uses simple toasts or colored borders
+        // Let's stick to simple clean look, maybe with an icon if I had one easily.
     }
+
     messageDisplay.classList.add('show');
-    setTimeout(() => messageDisplay.classList.remove('show'), 3000);
+    setTimeout(() => {
+        messageDisplay.classList.remove('opacity-100', 'translate-y-0');
+        messageDisplay.classList.add('opacity-0', 'translate-y-2');
+    }, 3000);
 }
 
 export function setButtonLoadingState(button, isLoading) {
@@ -587,7 +627,7 @@ export function setButtonLoadingState(button, isLoading) {
 
     if (isLoading) {
         if (content) content.classList.add('hidden');
-        if (googleIcon) googleIcon.classList.remove('hidden');
+        if (googleIcon) googleIcon.classList.add('hidden'); // Also hide google icon if loading
         if (spinner) spinner.classList.remove('hidden');
         button.disabled = true;
     } else {

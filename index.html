@@ -5,132 +5,226 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-site-verification" content="iExbroKtO4ZRq3ZjUsyY8JJowXvx-yHOy4yQq0iS6vY" />
     <title>SyNote</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Immediately apply theme to avoid flash of unstyled content (FOUC)
+        try {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        } catch (_) {}
+
+        tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            container: {
+              center: true,
+              padding: "2rem",
+              screens: {
+                "2xl": "1400px",
+              },
+            },
+            extend: {
+              colors: {
+                border: "hsl(var(--border))",
+                input: "hsl(var(--input))",
+                ring: "hsl(var(--ring))",
+                background: "hsl(var(--background))",
+                foreground: "hsl(var(--foreground))",
+                primary: {
+                  DEFAULT: "hsl(var(--primary))",
+                  foreground: "hsl(var(--primary-foreground))",
+                },
+                secondary: {
+                  DEFAULT: "hsl(var(--secondary))",
+                  foreground: "hsl(var(--secondary-foreground))",
+                },
+                destructive: {
+                  DEFAULT: "hsl(var(--destructive))",
+                  foreground: "hsl(var(--destructive-foreground))",
+                },
+                muted: {
+                  DEFAULT: "hsl(var(--muted))",
+                  foreground: "hsl(var(--muted-foreground))",
+                },
+                accent: {
+                  DEFAULT: "hsl(var(--accent))",
+                  foreground: "hsl(var(--accent-foreground))",
+                },
+                popover: {
+                  DEFAULT: "hsl(var(--popover))",
+                  foreground: "hsl(var(--popover-foreground))",
+                },
+                card: {
+                  DEFAULT: "hsl(var(--card))",
+                  foreground: "hsl(var(--card-foreground))",
+                },
+              },
+              borderRadius: {
+                lg: "var(--radius)",
+                md: "calc(var(--radius) - 2px)",
+                sm: "calc(var(--radius) - 4px)",
+              },
+              fontFamily: {
+                  sans: ['Inter', 'sans-serif'],
+              }
+            }
+          }
+        }
+    </script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <!-- Optimal Favicon for all modern browsers -->
-    <link rel="icon" href="/assets/logo.png" type="image/png" sizes="any">
     
-    <!-- Apple Touch Icon for iOS home screen -->
+    <link rel="icon" href="/assets/logo.png" type="image/png" sizes="any">
     <link rel="apple-touch-icon" href="/assets/logo.png">
 </head>
-<body>
+<body class="bg-background text-foreground antialiased min-h-screen flex flex-col">
 
-<div class="main-container">
-    <!-- Login View -->
-    <div id="login-view" class="view-container w-full max-w-md mx-auto">
-        <div class="login-container bg-white rounded-xl shadow-2xl p-6 sm:p-8 text-center transform transition-all duration-300 border border-gray-200">
+<!-- Theme Toggle Removed as per request (was floating) -->
+
+<div class="main-container flex-grow p-4 md:p-8">
+
+    <!-- Login View (Restored Original Layout with New Theme) -->
+    <div id="login-view" class="view-container w-full max-w-md mx-auto flex flex-col justify-center h-full">
+        <div class="login-container bg-card text-card-foreground rounded-xl shadow-2xl p-6 sm:p-8 text-center border border-border">
             <img src="/assets/logo.png" class="w-24 h-24 mb-4 mx-auto rounded-full object-cover logo-glow transition-all duration-300" alt="SyNote Logo">
-            <h1 class="text-4xl sm:text-5xl font-extrabold title-text tracking-tight mb-2 sm:mb-4 break-words transition-colors duration-300 text-gray-800">SyNote</h1>
+            <h1 class="text-4xl sm:text-5xl font-extrabold title-text tracking-tight mb-2 sm:mb-4 break-words text-foreground transition-colors duration-300">SyNote</h1>
             <div class="flex items-center justify-center gap-2 mb-2 sm:mb-4">
-                <p class="subtitle-text text-sm sm:text-base transition-colors duration-300 text-gray-600">Your notes, synced in real-time.</p>
+                <p class="subtitle-text text-sm sm:text-base text-muted-foreground transition-colors duration-300">Your notes, synced in real-time.</p>
             </div>
             
             <div class="space-y-4 text-left mb-2">
-                <input type="email" id="email-input" placeholder="Email" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
+                <input type="email" id="email-input" placeholder="Email" class="w-full px-4 py-2.5 text-base bg-background border border-input rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input transition-all placeholder:text-muted-foreground">
                 <div class="relative">
-                    <input type="password" id="password-input" placeholder="Password" class="w-full px-4 py-2.5 text-base text-gray-800 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-inner focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all">
-                    <button type="button" id="password-toggle-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-gray-600">
+                    <input type="password" id="password-input" placeholder="Password" class="w-full px-4 py-2.5 text-base bg-background border border-input rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input transition-all placeholder:text-muted-foreground">
+                    <button type="button" id="password-toggle-btn" class="absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground hover:text-foreground">
                         <i id="password-toggle-icon" class="fas fa-eye"></i>
                     </button>
                 </div>
             </div>
-            
+
             <div class="text-right mb-4">
-                <button id="forgot-password-btn" class="text-sm text-blue-600 hover:underline focus:outline-none">Forgot Password?</button>
+                <button id="forgot-password-btn" class="text-sm font-medium text-primary hover:underline focus:outline-none">Forgot Password?</button>
             </div>
 
             <div class="grid grid-cols-2 gap-4 my-4">
-                <button id="email-signin-btn" class="w-full btn-primary py-3 rounded-lg font-semibold flex items-center justify-center">
-                    <i class="fas fa-spinner fa-spin hidden"></i>
+                <button id="email-signin-btn" class="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 rounded-lg font-semibold flex items-center justify-center transition-all shadow-sm">
+                    <i class="fas fa-spinner fa-spin hidden mr-2"></i>
                     <span class="button-content">Sign In</span>
                 </button>
-                <button id="email-signup-btn" class="w-full btn-secondary py-3 rounded-lg font-semibold flex items-center justify-center">
-                    <i class="fas fa-spinner fa-spin hidden"></i>
+                <button id="email-signup-btn" class="w-full bg-secondary text-secondary-foreground hover:bg-secondary/80 py-3 rounded-lg font-semibold flex items-center justify-center transition-all shadow-sm">
+                    <i class="fas fa-spinner fa-spin hidden mr-2"></i>
                     <span class="button-content">Sign Up</span>
                 </button>
             </div>
+
             <div class="relative flex py-2 items-center">
-                <div class="flex-grow border-t border-gray-300"></div>
-                <span class="flex-shrink mx-4 text-gray-400 text-sm font-medium">OR</span>
-                <div class="flex-grow border-t border-gray-300"></div>
+                <div class="flex-grow border-t border-border"></div>
+                <span class="flex-shrink mx-4 text-muted-foreground text-sm font-medium">OR</span>
+                <div class="flex-grow border-t border-border"></div>
             </div>
-            <button id="google-signin-btn" class="mt-4 w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors">
+
+            <button id="google-signin-btn" class="mt-4 w-full bg-background border border-input hover:bg-accent hover:text-accent-foreground text-foreground py-3 px-4 rounded-lg flex items-center justify-center text-lg font-semibold transition-colors shadow-sm">
                 <img src="assets/google.png" class="w-6 h-6 mr-3 google-icon">
                 <span class="button-content">Continue with Google</span>
                 <i class="fas fa-spinner fa-spin hidden ml-2"></i>
             </button>
-            <button id="guest-signin-btn" class="mt-4 w-full bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-lg flex flex-col items-center justify-center transition-colors">
+
+            <button id="guest-signin-btn" class="mt-4 w-full bg-secondary/50 border border-input hover:bg-secondary text-foreground py-3 px-4 rounded-lg flex flex-col items-center justify-center transition-colors">
                 <span class="text-lg font-semibold">Continue as Guest</span>
-                <span class="block text-xs font-normal text-gray-500">(Saves data only on this device)</span>
+                <span class="block text-xs font-normal text-muted-foreground">(Saves data only on this device)</span>
             </button>
         </div>
     </div>
 
-    <!-- Notepad View (hidden by default) -->
-    <div id="app-view" class="view-container w-full h-full max-w-7xl mx-auto hidden opacity-0 scale-95">
-        <div class="flex h-full bg-white rounded-xl border border-gray-200 shadow-2xl relative">
+    <!-- Notepad View -->
+    <div id="app-view" class="view-container w-full h-[calc(100vh-2rem)] max-w-[1400px] mx-auto hidden opacity-0 scale-95">
+        <div class="flex h-full rounded-xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden relative">
             <div id="content-overlay" class="hidden md:hidden"></div>
+
             <!-- Sidebar -->
-            <div id="sidebar" class="w-64 bg-gray-50 p-5 border-r border-gray-200 flex-col flex-shrink-0 z-30 transition-transform transform -translate-x-full md:translate-x-0 md:relative md:flex h-full fixed top-0 left-0 shadow-lg md:shadow-none">
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800 flex items-center tracking-tight">
-                        <img src="/assets/logo.png" alt="SyNote Logo" class="h-8 mr-3">
+            <!-- Updated sidebar class: darker translucency (bg-muted/70) and backdrop blur (backdrop-blur-md) -->
+            <div id="sidebar" class="w-72 bg-muted/70 backdrop-blur-md border-r border-border flex-col flex-shrink-0 z-30 transition-transform transform -translate-x-full md:translate-x-0 md:relative md:flex h-full fixed top-0 left-0">
+                <div class="p-4 flex items-center justify-between border-b border-border/40">
+                    <div class="flex items-center gap-2 font-semibold tracking-tight text-lg">
+                        <img src="/assets/logo.png" alt="SyNote Logo" class="h-6 w-6">
                         <span>SyNote</span>
-                    </h1>
+                    </div>
+                    <!-- Sidebar Theme Toggle (Visible in both modes) -->
+                    <!-- Changed text-foreground to dark:text-white to force visibility in dark mode -->
+                    <button id="sidebar-theme-toggle" class="h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors text-black dark:text-white hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                         <i class="fas fa-moon dark:hidden"></i>
+                         <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
                 </div>
                 
-                <button id="new-note-btn" class="w-full btn-primary py-3 px-4 rounded-xl font-semibold mb-6 flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200">
-                    <i class="fas fa-plus mr-2"></i> New Note
-                </button>
+                <div class="p-4 space-y-4">
+                    <button id="new-note-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full shadow-sm text-base">
+                        <i class="fas fa-plus mr-2"></i> New Note
+                    </button>
 
-                <div class="relative mb-4 group">
-                    <input type="text" id="search-input" placeholder="Search notes..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 text-gray-700 transition-all placeholder-gray-400 group-hover:border-gray-300">
-                    <i class="fas fa-search absolute left-3.5 top-3 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                        <input type="text" id="search-input" placeholder="Search..." class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pl-9">
+                    </div>
                 </div>
 
-                <div id="notes-list" class="flex-grow overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                    <!-- Notes will be dynamically inserted here -->
+                <div class="flex-grow overflow-y-auto px-2 pb-4 custom-scrollbar">
+                    <div id="notes-list" class="space-y-1">
+                        <!-- Notes will be dynamically inserted here -->
+                    </div>
                 </div>
             </div>
 
             <!-- Main Content -->
-            <div id="main-content" class="flex-1 flex flex-col p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <button id="menu-btn" class="icon-btn md:hidden">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <input type="text" id="note-title" class="text-3xl font-extrabold text-gray-800 tracking-tight w-full border-b-2 border-transparent focus:outline-none focus:border-blue-500" placeholder="Note Title">
-                    <div class="flex items-center space-x-2">
-                        <button id="clear-all-btn" class="icon-btn" title="Clear All">
+            <div id="main-content" class="flex-1 flex flex-col h-full bg-background relative">
+                <header class="flex items-center justify-between p-4 border-b border-border h-14 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <button id="menu-btn" class="md:hidden inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-9 w-9">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <input type="text" id="note-title" class="flex h-9 w-full rounded-md border border-transparent bg-transparent px-3 py-1 text-lg font-semibold shadow-none transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Note Title">
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button id="clear-all-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8" title="Clear All">
                             <i class="fas fa-eraser"></i>
                         </button>
-                        <button id="copy-all-btn" class="icon-btn" title="Copy All">
+                        <button id="copy-all-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8" title="Copy All">
                             <i class="fas fa-copy"></i>
                         </button>
-                        <button id="paste-all-btn" class="icon-btn" title="Paste">
+                        <button id="paste-all-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8" title="Paste">
                             <i class="fas fa-paste"></i>
                         </button>
-                        <button id="sign-out-btn" class="icon-btn" title="Sign Out">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        <div class="h-4 w-[1px] bg-border mx-1"></div>
+                        <button id="sign-out-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-destructive hover:text-destructive-foreground h-8 w-8" title="Sign Out">
+                            <i class="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
+                </header>
+
+                <div class="flex-grow relative">
+                    <textarea id="note-input" class="w-full h-full resize-none p-6 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-base leading-relaxed placeholder:text-muted-foreground" placeholder="Start typing..."></textarea>
                 </div>
-                <div class="flex-grow flex flex-col">
-                    <textarea id="note-input" class="w-full h-full flex-grow p-4 bg-gray-50 border-2 border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Start typing... your notes will be saved and synced automatically."></textarea>
+
+                <div class="absolute bottom-4 right-6 text-xs text-muted-foreground pointer-events-none">
+                    <span id="save-status"></span>
                 </div>
-                <div id="save-status" class="text-right text-sm text-gray-500 mt-2 h-5"></div>
             </div>
         </div>
     </div>
 
     <footer class="mt-10 text-center">
-        <a href="mailto:arunthomas04042001@gmail.com" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600">
+        <a href="mailto:arunthomas04042001@gmail.com" class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
             <span>Contact Developer</span>
         </a>
     </footer>
+
 </div>
 
 <div id="message-display" role="alert">
@@ -138,6 +232,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script src="expr-eval.js"></script>
 <script type="module" src="main.js"></script>
 </body>
 </html>
