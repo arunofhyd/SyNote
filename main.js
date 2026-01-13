@@ -11,7 +11,6 @@ const notesList = document.getElementById('notes-list');
 const saveStatus = document.getElementById('save-status');
 const mainContainer = document.querySelector('.main-container');
 const searchInput = document.getElementById('search-input');
-const themeToggleBtn = document.getElementById('theme-toggle');
 
 let currentUser = null;
 let currentNoteId = null;
@@ -529,9 +528,10 @@ function setupEventListeners() {
         }
     });
 
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', toggleTheme);
-    }
+    // Theme toggle listeners
+    document.querySelectorAll('#global-theme-toggle, #sidebar-theme-toggle').forEach(btn => {
+        btn.addEventListener('click', toggleTheme);
+    });
 
     const passwordToggleBtn = document.getElementById('password-toggle-btn');
     const passwordToggleIcon = document.getElementById('password-toggle-icon');
