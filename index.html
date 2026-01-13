@@ -148,7 +148,8 @@
             <div id="content-overlay" class="hidden md:hidden"></div>
 
             <!-- Sidebar -->
-            <div id="sidebar" class="w-72 bg-muted/30 border-r border-border flex-col flex-shrink-0 z-30 transition-transform transform -translate-x-full md:translate-x-0 md:relative md:flex h-full fixed top-0 left-0">
+            <!-- Updated sidebar class: darker translucency (bg-muted/70) and backdrop blur (backdrop-blur-md) -->
+            <div id="sidebar" class="w-72 bg-muted/70 backdrop-blur-md border-r border-border flex-col flex-shrink-0 z-30 transition-transform transform -translate-x-full md:translate-x-0 md:relative md:flex h-full fixed top-0 left-0">
                 <div class="p-4 flex items-center justify-between border-b border-border/40">
                     <div class="flex items-center gap-2 font-semibold tracking-tight text-lg">
                         <img src="/assets/logo.png" alt="SyNote Logo" class="h-6 w-6">
@@ -156,7 +157,7 @@
                     </div>
                     <!-- Sidebar Theme Toggle (Visible in both modes) -->
                     <!-- Changed text-foreground to dark:text-white to force visibility in dark mode -->
-                    <button id="sidebar-theme-toggle" class="h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors text-foreground dark:text-white hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <button id="sidebar-theme-toggle" class="h-8 w-8 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors text-black dark:text-white hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                          <i class="fas fa-moon dark:hidden"></i>
                          <i class="fas fa-sun hidden dark:block"></i>
                     </button>
