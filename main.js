@@ -500,17 +500,24 @@ function setupEventListeners() {
 
     document.getElementById('new-note-btn').addEventListener('click', createNewNote);
 
-    document.getElementById('settings-btn').addEventListener('click', () => {
+    document.getElementById('settings-btn').addEventListener('click', function() {
         const bubble = document.getElementById('settings-bubble');
         bubble.classList.toggle('hidden');
+        this.classList.toggle('bg-accent');
+        this.classList.toggle('text-accent-foreground');
     });
 
     document.getElementById('rename-note-btn').addEventListener('click', () => {
         if (currentNoteId) {
-             // Find current title
-             const currentNote = allNotes.find(n => n.id === currentNoteId);
-             const title = currentNote ? currentNote.title : noteTitle.value;
-             renameNote(currentNoteId, title);
+            // Close the bubble and reset settings button state
+            const bubble = document.getElementById('settings-bubble');
+            bubble.classList.add('hidden');
+            const settingsBtn = document.getElementById('settings-btn');
+            settingsBtn.classList.remove('bg-accent', 'text-accent-foreground');
+
+            // Focus and select title input
+            noteTitle.focus();
+            noteTitle.select();
         } else {
             showMessage("No note selected.", 'error');
         }
@@ -615,7 +622,7 @@ export function showMessage(msg, type = 'info') {
     messageText.textContent = msg;
 
     // Shadcn toast style
-    messageDisplay.className = 'fixed bottom-5 right-5 z-50 px-4 py-3 rounded-md shadow-lg border transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 text-sm';
+    messageDisplay.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:bottom-5 md:right-5 z-50 px-4 py-3 rounded-md shadow-lg border transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 text-sm w-[90%] md:w-auto justify-center md:justify-start';
 
     if (type === 'error') {
         messageDisplay.classList.add('bg-destructive', 'text-destructive-foreground', 'border-destructive');
