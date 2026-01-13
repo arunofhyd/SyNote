@@ -541,7 +541,7 @@ function setupEventListeners() {
             showMessage("Note cleared.", 'success');
         } else {
             actionPending = 'clear';
-            showMessage("Click again to confirm.", 'info');
+            showMessage("Click again to erase this note.", 'info');
             clearTimeout(actionTimer);
             actionTimer = setTimeout(() => {
                 actionPending = null;
