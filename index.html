@@ -101,6 +101,8 @@
     
     <link rel="icon" href="/assets/logo.png" type="image/png" sizes="any">
     <link rel="apple-touch-icon" href="/assets/logo.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
 </head>
 <body class="bg-background text-foreground antialiased min-h-screen flex flex-col">
 
@@ -275,5 +277,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script src="expr-eval.js"></script>
 <script type="module" src="main.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+        });
+    }
+</script>
 </body>
 </html>
