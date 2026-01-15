@@ -1,59 +1,56 @@
-# SyNote
+<div align="center">
+  <img src="./assets/logo.png" alt="SyNote Logo" width="120" height="120">
+  <h1>SyNote</h1>
+  <p><strong>Simple. Elegant. Real-time.</strong></p>
 
-<p align="center">
-  <img src="./assets/logo.png" alt="SyNote Logo" width="120" height="120" />
-</p>
-
-<h3 align="center">Simple. Elegant. Real-time.</h3>
-
-<p align="center">
-  SyNote is a minimalist, progressive web application (PWA) designed for seamless note-taking. <br>
-  Whether you're online or offline, your notes are always with you.
-</p>
+  <p>
+    <img src="https://img.shields.io/badge/Built%20With-HTML5-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML5">
+    <img src="https://img.shields.io/badge/Style-Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css" alt="Tailwind CSS">
+    <img src="https://img.shields.io/badge/Hosted-Firebase-FFCA28?style=flat-square&logo=firebase" alt="Firebase">
+    <img src="https://img.shields.io/badge/PWA-Ready-5A0FC8?style=flat-square&logo=pwa&logoColor=white" alt="PWA Ready">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+  </p>
+</div>
 
 ---
 
+**SyNote** is a minimalist, progressive web application (PWA) designed for seamless note-taking. Whether you're online or offline, your notes are always with you.
+
+Unlike traditional note apps that require constant connectivity, SyNote leverages local storage and efficient compression to ensure your thoughts are captured instantly.
+
+## 🚀 Why SyNote?
+
+| Feature | SyNote | Google Keep |
+| :--- | :--- | :--- |
+| **Privacy** | 🔒 **High** (Guest mode local) | ☁️ **Medium** (Cloud Only) |
+| **Math Support** | 🧮 **Native** (Inline Calculation) | ❌ **No** (Manual) |
+| **Offline Use** | ✅ **Yes** (PWA Capable) | ✅ **Yes** (App Only) |
+| **Search** | ⚡ **Instant** (Compressed Data) | 🔍 **Standard** |
+| **Guest Mode** | 👤 **Yes** (No Login Req.) | ❌ **No** (Account Req.) |
+
 ## ✨ Key Features
 
-*   **🔄 Real-time Synchronization**
-    *   Powered by **Firebase Firestore**, your notes sync instantly across all your devices.
-    *   Collaborate effortlessly—changes appear as they happen.
+*   **Real-time Synchronization**: 🔄 Powered by **Firebase Firestore**, notes sync instantly across devices.
+*   **Guest Mode & Privacy**: 🕵️ Try it without signing in! Data is compressed with **LZ-String** and stored locally.
+*   **Smart Math Integration**: 🧮 Type `25 * 4 =` and it automatically becomes `100`.
+*   **Progressive Web App**: 📱 Install on desktop or mobile for a native, offline-capable experience.
+*   **Beautiful UI/UX**:
+    *   Dark Mode support.
+    *   Responsive sidebar and layout.
+    *   Instant client-side search.
+*   **Secure**: 🔒 Authentication via Google or Email/Password.
 
-*   **🕵️ Guest Mode & Privacy**
-    *   Try it out without signing in! Guest notes are stored locally in your browser's `localStorage`.
-    *   **Data Compression:** We use **LZ-String** compression to maximize storage space and keep your data efficient.
-
-*   **🧮 Smart Math Integration**
-    *   Perform quick calculations right inside your notes.
-    *   Just type an expression ending with `=` (e.g., `25 * 4 =`) and SyNote automatically appends the result (`100`).
-
-*   **📱 Progressive Web App (PWA)**
-    *   Install SyNote on your desktop or mobile device for a native app experience.
-    *   Works offline! (Cache-first strategy with Service Workers).
-
-*   **🎨 Beautiful UI/UX**
-    *   **Dark Mode**: Fully supported with a smooth toggle switch.
-    *   **Responsive Design**: A collapsible sidebar and mobile-optimized layout ensure a great experience on any screen size.
-    *   **Search**: Instant client-side search filters through your notes (even the compressed ones!) as you type.
-
-*   **🔒 Secure**
-    *   Authentication via **Google** or **Email/Password**.
-    *   Secure data access rules ensure only you can see your notes.
-
-## 🛠️ Tech Stack
-
-*   **Frontend:** HTML5, Vanilla JavaScript (ES6 Modules)
-*   **Styling:** [Tailwind CSS](https://tailwindcss.com/) (via CDN with custom configuration)
-*   **Backend / Database:** [Firebase](https://firebase.google.com/) (Authentication, Firestore)
-*   **Libraries:**
-    *   `lz-string` for client-side compression.
-    *   `expr-eval` for safe mathematical expression evaluation.
-    *   FontAwesome for icons.
-
+## 📦 Tech Stack
+This project uses the following technologies:
+*   **HTML5 & Vanilla JS** (Frontend)
+*   **Tailwind CSS** (Styling)
+*   **Firebase** (Auth & Firestore)
+*   **lz-string** (Compression)
+*   **expr-eval** (Math)
+*   **FontAwesome** (Icons)
 
 ## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
+MIT License. Open source and free to use.
 
 ---
 
