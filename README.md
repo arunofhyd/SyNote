@@ -50,35 +50,6 @@
     *   `expr-eval` for safe mathematical expression evaluation.
     *   FontAwesome for icons.
 
-## 🚀 Getting Started
-
-Since SyNote is a static web application, getting it running locally is super simple.
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/synote.git
-    cd synote
-    ```
-
-2.  **Serve the files:**
-    You can use any static file server. For example, with Python:
-    ```bash
-    # Python 3
-    python -m http.server 8000
-    ```
-    Or with Node.js `http-server`:
-    ```bash
-    npx http-server .
-    ```
-
-3.  **Open in Browser:**
-    Navigate to `http://localhost:8000` to start taking notes!
-
-## 🌐 Deployment
-
-SyNote is optimized for static hosting platforms like **Netlify**, **Vercel**, or **GitHub Pages**.
-
-The live version is hosted at: **[https://synote.netlify.app/](https://synote.netlify.app/)**
 
 ## 📄 License
 
