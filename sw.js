@@ -1,16 +1,16 @@
-const CACHE_NAME = 'synote-v2';
+const CACHE_NAME = 'synote-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/styles.css',
   '/main.js',
-  '/expr-eval.js',
+  '/vendor/expr-eval.js',
   '/assets/logo.png',
   '/assets/google.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-  '/lz-string.min.js'
+  '/vendor/lz-string.min.js'
 ];
 
 self.addEventListener('install', (event) => {
