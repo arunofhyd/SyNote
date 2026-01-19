@@ -204,32 +204,25 @@ function calculateStorageUsage() {
 
 function updateStorageIndicator() {
     const totalBytes = calculateStorageUsage();
-    const limitBytes = 1048576; // 1 MB
+    const limitBytes = 950272; // 928 KB (Safe limit)
     const percentage = Math.min((totalBytes / limitBytes) * 100, 100);
 
-    let sizeText = '';
-    if (totalBytes < 1024) {
-        sizeText = `${totalBytes} B`;
-    } else if (totalBytes < 1024 * 1024) {
-        sizeText = `${(totalBytes / 1024).toFixed(1)} KB`;
-    } else {
-        sizeText = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
-    }
+    const sizeText = `${(totalBytes / 1024).toFixed(1)} KB`;
 
     const storageText = document.getElementById('storage-text');
     const storageBar = document.getElementById('storage-bar');
 
-    if (storageText) storageText.textContent = `${sizeText} / 1 MB`;
+    if (storageText) storageText.textContent = `${sizeText} / 928 KB`;
     if (storageBar) {
         storageBar.style.width = `${percentage}%`;
 
-        storageBar.classList.remove('bg-primary', 'bg-yellow-500', 'bg-red-500');
+        storageBar.classList.remove('bg-primary', 'bg-green-500', 'bg-yellow-500', 'bg-red-500');
         if (percentage > 90) {
             storageBar.classList.add('bg-red-500');
         } else if (percentage > 70) {
             storageBar.classList.add('bg-yellow-500');
         } else {
-            storageBar.classList.add('bg-primary');
+            storageBar.classList.add('bg-green-500');
         }
     }
 }
