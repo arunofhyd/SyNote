@@ -192,15 +192,64 @@ function updateActiveNoteInList(id) {
     }
 }
 
+function calculateStorageUsage() {
+    try {
+        const jsonString = JSON.stringify(allNotes);
+        const blob = new Blob([jsonString]);
+        return blob.size;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function updateStorageIndicator() {
+    const totalBytes = calculateStorageUsage();
+    const limitBytes = 1048576; // 1 MB
+    const percentage = Math.min((totalBytes / limitBytes) * 100, 100);
+
+    let sizeText = '';
+    if (totalBytes < 1024) {
+        sizeText = `${totalBytes} B`;
+    } else if (totalBytes < 1024 * 1024) {
+        sizeText = `${(totalBytes / 1024).toFixed(1)} KB`;
+    } else {
+        sizeText = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    const storageText = document.getElementById('storage-text');
+    const storageBar = document.getElementById('storage-bar');
+
+    if (storageText) storageText.textContent = `${sizeText} / 1 MB`;
+    if (storageBar) {
+        storageBar.style.width = `${percentage}%`;
+
+        storageBar.classList.remove('bg-primary', 'bg-yellow-500', 'bg-red-500');
+        if (percentage > 90) {
+            storageBar.classList.add('bg-red-500');
+        } else if (percentage > 70) {
+            storageBar.classList.add('bg-yellow-500');
+        } else {
+            storageBar.classList.add('bg-primary');
+        }
+    }
+}
+
 export function handleUserLogin(user) {
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
 
     searchInput.value = '';
 
+    // Update profile email
+    const emailDisplay = document.getElementById('user-email-display');
+    if (emailDisplay) {
+        emailDisplay.textContent = user.isAnonymous ? 'Guest User' : (user.email || 'User');
+    }
+
     if (user.isAnonymous) {
         allNotes = GuestStore.getAllNotes();
         renderNotesList(allNotes);
+        updateStorageIndicator();
         if (allNotes.length > 0 && !currentNoteId) {
             loadNote(allNotes[0].id);
         } else if (allNotes.length === 0) {
@@ -215,6 +264,7 @@ export function handleUserLogin(user) {
 
     unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
         allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        updateStorageIndicator();
 
         const query = searchInput.value.trim().toLowerCase();
         if (query) {
@@ -274,6 +324,7 @@ async function createNewNote() {
         newNote.id = id;
         GuestStore.addNote(newNote);
         allNotes = GuestStore.getAllNotes();
+        updateStorageIndicator();
 
         searchInput.value = '';
         renderNotesList(allNotes);
@@ -298,6 +349,7 @@ async function renameNote(noteId, currentTitle) {
         if (currentUser.isAnonymous) {
             GuestStore.updateNote(noteId, { title: newTitle });
             allNotes = GuestStore.getAllNotes();
+            updateStorageIndicator();
 
             const query = searchInput.value.trim().toLowerCase();
             if (query) performSearch(query);
@@ -328,6 +380,7 @@ async function deleteNote(noteId) {
         if (currentUser.isAnonymous) {
             GuestStore.deleteNote(noteId);
             allNotes = GuestStore.getAllNotes();
+            updateStorageIndicator();
 
             if (currentNoteId === noteId) {
                 currentNoteId = null;
@@ -379,6 +432,7 @@ function saveNote() {
         }
 
         saveStatus.textContent = "Saved (Local)";
+        updateStorageIndicator();
 
         const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
         if (item) item.textContent = noteTitle.value || 'Untitled Note';
@@ -570,29 +624,51 @@ function setupEventListeners() {
         }
     });
 
-    document.getElementById('sign-out-btn').addEventListener('click', () => {
-        if (actionPending === 'signout') {
-            clearTimeout(actionTimer);
-            actionPending = null;
-            if (currentUser.isAnonymous) {
-                currentUser = null;
-                allNotes = [];
-                showLoginView();
-                noteTitle.value = '';
-                noteInput.value = '';
-                notesList.innerHTML = '';
-            } else {
-                appSignOut();
+    // Profile Dropdown Toggle
+    const profileBtn = document.getElementById('profile-btn');
+    const profileDropdown = document.getElementById('profile-dropdown');
+
+    if (profileBtn) {
+        profileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profileDropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+                profileDropdown.classList.add('hidden');
             }
-        } else {
-            actionPending = 'signout';
-            showMessage("Click again to sign out.", 'info');
-            clearTimeout(actionTimer);
-            actionTimer = setTimeout(() => {
+        });
+    }
+
+    const signOutBtn = document.getElementById('dropdown-sign-out-btn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => {
+            if (actionPending === 'signout') {
+                clearTimeout(actionTimer);
                 actionPending = null;
-            }, 5000);
-        }
-    });
+                profileDropdown.classList.add('hidden'); // Close dropdown
+                if (currentUser.isAnonymous) {
+                    currentUser = null;
+                    allNotes = [];
+                    showLoginView();
+                    noteTitle.value = '';
+                    noteInput.value = '';
+                    notesList.innerHTML = '';
+                } else {
+                    appSignOut();
+                }
+            } else {
+                actionPending = 'signout';
+                showMessage("Click again to sign out.", 'info');
+                clearTimeout(actionTimer);
+                actionTimer = setTimeout(() => {
+                    actionPending = null;
+                }, 5000);
+            }
+        });
+    }
 
     document.getElementById('copy-all-btn').addEventListener('click', () => {
         if (noteInput.value) {

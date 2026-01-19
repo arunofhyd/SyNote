@@ -220,9 +220,43 @@
                             <i class="fas fa-cog"></i>
                         </button>
                         <div class="h-4 w-[1px] bg-border mx-1"></div>
-                        <button id="sign-out-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-destructive hover:text-destructive-foreground h-8 w-8" title="Sign Out">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
+                        <div class="relative">
+                            <button id="profile-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8" title="Profile">
+                                <i class="fas fa-user-circle text-lg"></i>
+                            </button>
+
+                            <!-- Profile Dropdown -->
+                            <div id="profile-dropdown" class="hidden absolute right-0 top-full mt-2 w-72 bg-card border border-border shadow-xl rounded-xl p-4 z-50 flex flex-col gap-3 transform origin-top-right transition-all duration-200">
+                                <!-- User Info -->
+                                <div class="flex items-center gap-3 pb-3 border-b border-border">
+                                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                        <i class="fas fa-user text-lg"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-medium text-muted-foreground">Signed in as</p>
+                                        <p id="user-email-display" class="text-sm font-semibold truncate text-foreground">guest@synote.app</p>
+                                    </div>
+                                </div>
+
+                                <!-- Storage Indicator -->
+                                <div class="space-y-1.5">
+                                     <div class="flex justify-between text-xs">
+                                         <span class="text-muted-foreground font-medium">Storage Usage</span>
+                                         <span id="storage-text" class="text-foreground font-medium">0 KB / 1 MB</span>
+                                     </div>
+                                     <div class="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                         <div id="storage-bar" class="h-full bg-primary transition-all duration-500 ease-out" style="width: 0%"></div>
+                                     </div>
+                                     <p class="text-[10px] text-muted-foreground text-right">Relative to Firestore 1MB limit</p>
+                                </div>
+
+                                <!-- Actions -->
+                                <button id="dropdown-sign-out-btn" class="w-full flex items-center justify-center gap-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground py-2 text-sm font-medium transition-colors mt-1">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Sign Out</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </header>
 
