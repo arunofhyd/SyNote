@@ -9,14 +9,15 @@ I want to add a sophisticated "glow on hover" effect to the logo on my login scr
 Please implement the following CSS and HTML updates:
 
 ### 1. Add the CSS Class
-Add this `.logo-glow` class to your global stylesheet or component styles. It uses a `box-shadow` that relies on the `--primary` CSS variable to match the theme.
+Add this `.logo-glow` class to your global stylesheet or component styles. It uses a `filter: drop-shadow` effect (instead of box-shadow) to ensure the glow perfectly hugs the logo's shape without creating visible square outlines or artifacts.
 
 ```css
 /* Logo Glow Effect */
 .logo-glow {
-    /* Base glow: subtle shadow */
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-    transition: box-shadow 0.3s ease-in-out;
+    /* Base glow: subtle drop shadow */
+    filter: drop-shadow(0 0 15px hsl(var(--primary) / 0.3));
+    transition: filter 0.3s ease-in-out;
+
     /* Ensure no default border, outline, or background interferes */
     border: none !important;
     outline: none !important;
@@ -25,8 +26,8 @@ Add this `.logo-glow` class to your global stylesheet or component styles. It us
 }
 
 .logo-glow:hover {
-    /* Hover state: intensified and larger shadow */
-    box-shadow: 0 0 40px hsl(var(--primary) / 0.6);
+    /* Hover state: intensified and larger glow */
+    filter: drop-shadow(0 0 30px hsl(var(--primary) / 0.6));
 }
 ```
 
@@ -41,7 +42,7 @@ Add the `logo-glow` class to your logo `<img>` element.
 ```html
 <img src="/path/to/logo.png" class="logo-glow rounded-full object-cover" alt="Logo">
 ```
-*(Note: `rounded-full` and `object-cover` are recommended to make the glow look best on a circular logo).*
+*(Note: `rounded-full` and `object-cover` are recommended).*
 
 ---
 
@@ -51,5 +52,5 @@ If you need to manually configure the shadow strength, here are the exact measur
 
 | State | Blur Radius | Opacity (Strength) | CSS Syntax |
 | :--- | :--- | :--- | :--- |
-| **Normal** | **20px** | **30%** (0.3) | `0 0 20px rgba(..., 0.3)` |
-| **Hover** | **40px** | **60%** (0.6) | `0 0 40px rgba(..., 0.6)` |
+| **Normal** | **15px** | **30%** (0.3) | `drop-shadow(0 0 15px rgba(..., 0.3))` |
+| **Hover** | **30px** | **60%** (0.6) | `drop-shadow(0 0 30px rgba(..., 0.6))` |
