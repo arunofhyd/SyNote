@@ -17,9 +17,11 @@ Add this `.logo-glow` class to your global stylesheet or component styles. It us
     /* Base glow: subtle shadow */
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
     transition: box-shadow 0.3s ease-in-out;
-    /* Ensure no default border or outline interferes with the glow */
+    /* Ensure no default border, outline, or background interferes */
     border: none !important;
     outline: none !important;
+    background-color: transparent !important;
+    --tw-ring-color: transparent !important;
 }
 
 .logo-glow:hover {

@@ -135,6 +135,8 @@ body {
     transition: box-shadow 0.3s ease-in-out;
     border: none !important;
     outline: none !important;
+    background-color: transparent !important;
+    --tw-ring-color: transparent !important;
 }
 .logo-glow:hover {
     box-shadow: 0 0 40px hsl(var(--primary) / 0.6);
