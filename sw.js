@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synote-v3';
+const CACHE_NAME = 'synote-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -22,6 +22,11 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Bypass service worker for non-GET requests and Firebase API calls
+  if (event.request.method !== 'GET' || event.request.url.includes('firestore.googleapis.com')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
