@@ -27,12 +27,15 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Immediately apply theme to avoid flash of unstyled content (FOUC)
+        // Immediately apply theme and login state to avoid flash of unstyled content (FOUC)
         try {
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
             } else {
                 document.documentElement.classList.remove('dark');
+            }
+            if (localStorage.getItem('synote_logged_in') === 'true') {
+                document.documentElement.classList.add('is-logged-in');
             }
         } catch (_) {}
 

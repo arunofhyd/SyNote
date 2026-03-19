@@ -142,3 +142,18 @@ body {
 .logo-glow:hover {
     filter: drop-shadow(0 0 30px hsl(var(--primary) / 0.6));
 }
+
+/* Fast-Load CSS Rules */
+html.is-logged-in #login-view {
+    display: none !important;
+}
+
+html.is-logged-in #app-view {
+    display: flex !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+}
+
+html.is-logged-in .main-container {
+    justify-content: space-between !important;
+}
