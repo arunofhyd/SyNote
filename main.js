@@ -66,6 +66,8 @@ const GuestStore = {
 
 // --- UI Functions ---
 export function showLoginView() {
+    localStorage.removeItem('synote_logged_in');
+    document.documentElement.classList.remove('is-logged-in');
     mainContainer.classList.remove('is-app-view');
     appView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
@@ -76,6 +78,7 @@ export function showLoginView() {
 }
 
 export function showAppView() {
+    localStorage.setItem('synote_logged_in', 'true');
     loginView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
         mainContainer.classList.add('is-app-view');
