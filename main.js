@@ -67,6 +67,7 @@ const GuestStore = {
 // --- UI Functions ---
 export function showLoginView() {
     localStorage.removeItem('synote_logged_in');
+    localStorage.removeItem('synote_uid');
     document.documentElement.classList.remove('is-logged-in');
     mainContainer.classList.remove('is-app-view');
     appView.classList.add('opacity-0', 'scale-95');
@@ -231,6 +232,16 @@ function updateStorageIndicator() {
 }
 
 export function handleUserLogin(user) {
+    if (currentUser && currentUser.uid === user.uid && unsubscribeFromNotes) {
+        // Already initialized (e.g. from eager load)
+        currentUser = user;
+        const emailDisplay = document.getElementById('user-email-display');
+        if (emailDisplay) {
+            emailDisplay.textContent = user.isAnonymous ? 'Guest User' : (user.email || 'User');
+        }
+        return;
+    }
+
     currentUser = user;
     if (unsubscribeFromNotes) unsubscribeFromNotes();
 
@@ -255,16 +266,18 @@ export function handleUserLogin(user) {
         return;
     }
 
+    localStorage.setItem('synote_uid', user.uid);
+
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
     const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
-    unsubscribeFromNotes = onSnapshot(q, (snapshot) => {
+    unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
         allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         updateStorageIndicator();
 
-        const query = searchInput.value.trim().toLowerCase();
-        if (query) {
-             performSearch(query);
+        const queryStr = searchInput.value.trim().toLowerCase();
+        if (queryStr) {
+             performSearch(queryStr);
         } else {
              renderNotesList(allNotes);
              if (allNotes.length > 0 && !currentNoteId) {
@@ -732,7 +745,31 @@ export function setButtonLoadingState(button, isLoading) {
 }
 
 // --- App Initialization ---
+function eagerLoadNotes() {
+    const cachedUid = localStorage.getItem('synote_uid');
+    const isLoggedIn = localStorage.getItem('synote_logged_in') === 'true';
+    if (cachedUid && isLoggedIn) {
+        currentUser = { uid: cachedUid };
+        const notesCollectionRef = collection(db, "users", cachedUid, "notes");
+        const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
+        unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+            allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateStorageIndicator();
+            const queryStr = searchInput.value.trim().toLowerCase();
+            if (queryStr) {
+                 performSearch(queryStr);
+            } else {
+                 renderNotesList(allNotes);
+                 if (allNotes.length > 0 && !currentNoteId) {
+                     loadNote(allNotes[0].id);
+                 }
+            }
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    eagerLoadNotes();
     setupEventListeners();
     initAuth();
 });
