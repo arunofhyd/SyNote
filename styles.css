@@ -149,7 +149,7 @@ html.is-logged-in #login-view {
 }
 
 html.is-logged-in #app-view {
-    display: flex !important;
+    display: block !important;
     opacity: 1 !important;
     transform: scale(1) !important;
 }
