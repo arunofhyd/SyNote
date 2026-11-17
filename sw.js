@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synote-v5';
+const CACHE_NAME = 'synote-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

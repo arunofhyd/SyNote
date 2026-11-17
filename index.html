@@ -326,10 +326,11 @@
                     console.log('ServiceWorker registration failed: ', err);
                 });
 
-            // Auto-reload once new service worker activates and claims clients
+            // Auto-reload once new service worker activates and claims clients (only on upgrade, not initial install)
+            let hadController = !!navigator.serviceWorker.controller;
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
+                if (hadController && !refreshing) {
                     refreshing = true;
                     window.location.reload();
                 }

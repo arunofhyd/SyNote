@@ -30,6 +30,108 @@ function toggleTheme() {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
 }
 
+// --- Safe Decompression Helper ---
+function lenientDecompressUTF16(compressedStr) {
+    if (!compressedStr) return '';
+    const length = compressedStr.length;
+    const resetValue = 16384;
+    const getNextValue = (o) => compressedStr.charCodeAt(o) - 32;
+
+    var dictionary = [], enlargeIn = 4, dictSize = 4, numBits = 3, entry = '', result = [], i, w, bits, resb, maxpower, power, c;
+    var data = { val: getNextValue(0), position: resetValue, index: 1 };
+
+    for (i = 0; i < 3; i += 1) dictionary[i] = i;
+
+    bits = 0; maxpower = Math.pow(2, 2); power = 1;
+    while (power != maxpower) {
+        resb = data.val & data.position; data.position >>= 1;
+        if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+        bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+    }
+
+    switch (bits) {
+        case 0:
+            bits = 0; maxpower = Math.pow(2, 8); power = 1;
+            while (power != maxpower) {
+                resb = data.val & data.position; data.position >>= 1;
+                if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+                bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+            }
+            c = String.fromCharCode(bits);
+            break;
+        case 1:
+            bits = 0; maxpower = Math.pow(2, 16); power = 1;
+            while (power != maxpower) {
+                resb = data.val & data.position; data.position >>= 1;
+                if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+                bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+            }
+            c = String.fromCharCode(bits);
+            break;
+        case 2: return '';
+    }
+    dictionary[3] = c; w = c; result.push(c);
+
+    while (true) {
+        if (data.index > length) return result.join('');
+        bits = 0; maxpower = Math.pow(2, numBits); power = 1;
+        while (power != maxpower) {
+            resb = data.val & data.position; data.position >>= 1;
+            if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+            bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+        }
+
+        switch (c = bits) {
+            case 0:
+                bits = 0; maxpower = Math.pow(2, 8); power = 1;
+                while (power != maxpower) {
+                    resb = data.val & data.position; data.position >>= 1;
+                    if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+                    bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+                }
+                dictionary[dictSize++] = String.fromCharCode(bits); c = dictSize - 1; enlargeIn--;
+                break;
+            case 1:
+                bits = 0; maxpower = Math.pow(2, 16); power = 1;
+                while (power != maxpower) {
+                    resb = data.val & data.position; data.position >>= 1;
+                    if (data.position == 0) { data.position = resetValue; data.val = getNextValue(data.index++); }
+                    bits |= (resb > 0 ? 1 : 0) * power; power <<= 1;
+                }
+                dictionary[dictSize++] = String.fromCharCode(bits); c = dictSize - 1; enlargeIn--;
+                break;
+            case 2: return result.join('');
+        }
+
+        if (enlargeIn == 0) { enlargeIn = Math.pow(2, numBits); numBits++; }
+        if (dictionary[c]) {
+            entry = dictionary[c];
+        } else {
+            if (c === dictSize) entry = w + w.charAt(0);
+            else return result.join('');
+        }
+        result.push(entry);
+        dictionary[dictSize++] = w + entry.charAt(0);
+        enlargeIn--;
+        w = entry;
+        if (enlargeIn == 0) { enlargeIn = Math.pow(2, numBits); numBits++; }
+    }
+}
+
+function safeDecompress(raw, isCompressed) {
+    if (!raw) return '';
+    if (!isCompressed) return raw;
+    try {
+        const decomp = LZString.decompressFromUTF16(raw);
+        if (decomp !== null) return decomp;
+    } catch (_) {}
+    try {
+        const lenient = lenientDecompressUTF16(raw);
+        if (lenient) return lenient;
+    } catch (_) {}
+    return raw;
+}
+
 // --- Guest Mode Storage Helper ---
 const GuestStore = {
     getKey: () => 'synote_guest_notes',
@@ -92,6 +194,7 @@ export function showLoginView() {
 
 export function showAppView() {
     localStorage.setItem('synote_logged_in', 'true');
+    document.documentElement.classList.add('is-logged-in');
     loginView.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
         mainContainer.classList.add('is-app-view');
@@ -159,13 +262,7 @@ function loadNote(id) {
             noteTitle.value = newTitle;
         }
 
-        let content = "";
-        if (noteData.isCompressed && noteData.content) {
-            const decompressed = LZString.decompressFromUTF16(noteData.content);
-            content = decompressed !== null ? decompressed : "";
-        } else {
-            content = noteData.content || "";
-        }
+        let content = safeDecompress(noteData.content, noteData.isCompressed);
 
         if (noteInput.value !== content) {
             const isFocused = (document.activeElement === noteInput);
@@ -374,14 +471,7 @@ function performSearch(query) {
             return true;
         }
 
-        let content = "";
-        if (note.isCompressed && note.content) {
-            const decompressed = LZString.decompressFromUTF16(note.content);
-            content = decompressed !== null ? decompressed : "";
-        } else {
-            content = note.content || "";
-        }
-
+        const content = safeDecompress(note.content, note.isCompressed);
         return content.toLowerCase().includes(lowerQuery);
     });
 
@@ -888,13 +978,7 @@ async function eagerLoadNotes() {
                     noteTitle.disabled = false;
                     noteInput.disabled = false;
                     noteTitle.value = targetNote.title || '';
-                    let content = '';
-                    if (targetNote.isCompressed && targetNote.content) {
-                        const decompressed = LZString.decompressFromUTF16(targetNote.content);
-                        content = decompressed !== null ? decompressed : '';
-                    } else {
-                        content = targetNote.content || '';
-                    }
+                    const content = safeDecompress(targetNote.content, targetNote.isCompressed);
                     noteInput.value = content;
                 }
             }
