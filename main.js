@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, query, orderBy, getDocsFromCache } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, getDocsFromCache } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
@@ -15,12 +15,12 @@ const searchInput = document.getElementById('search-input');
 let currentUser = null;
 let currentNoteId = null;
 let unsubscribeFromNotes = null;
-let unsubscribeFromCurrentNote = null;
 let debounceTimer = null;
 let actionPending = null;
 let actionTimer = null;
 let allNotes = [];
 let searchDebounceTimer = null;
+let notesListenerRetryTimer = null;
 
 // --- Theme Logic ---
 // Theme initialization is now handled in index.html head to prevent FOUC
@@ -132,6 +132,56 @@ function safeDecompress(raw, isCompressed) {
     return raw;
 }
 
+// --- Note Sorting and Content Processing ---
+function getNoteTime(note) {
+    if (!note) return 0;
+    const t = note.updatedAt || note.createdAt;
+    if (!t) return 0;
+    if (typeof t.toMillis === 'function') return t.toMillis();
+    if (t instanceof Date) return t.getTime();
+    if (typeof t === 'number') return t;
+    if (typeof t === 'string') {
+        const parsed = new Date(t).getTime();
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+}
+
+function sortNotes(notes) {
+    return [...notes].sort((a, b) => getNoteTime(b) - getNoteTime(a));
+}
+
+function processNoteContent(noteData) {
+    if (!noteData) return;
+    const newTitle = noteData.title || '';
+    if (noteTitle.value !== newTitle) {
+        noteTitle.value = newTitle;
+    }
+
+    let content = safeDecompress(noteData.content, noteData.isCompressed);
+
+    if (noteInput.value !== content) {
+        const isFocused = (document.activeElement === noteInput);
+        const cursorPosition = noteInput.selectionStart;
+        noteInput.value = content;
+
+        const query = searchInput.value.trim().toLowerCase();
+        if (query && !isFocused) {
+            const lowerContent = content.toLowerCase();
+            const index = lowerContent.indexOf(query);
+            if (index !== -1) {
+                setTimeout(() => {
+                     noteInput.focus();
+                     noteInput.setSelectionRange(index, index + query.length);
+                }, 100);
+            }
+        } else if (isFocused) {
+            const newPos = Math.min(cursorPosition, content.length);
+            noteInput.setSelectionRange(newPos, newPos);
+        }
+    }
+}
+
 // --- Guest Mode Storage Helper ---
 const GuestStore = {
     getKey: () => 'synote_guest_notes',
@@ -174,10 +224,6 @@ export function showLoginView() {
     if (unsubscribeFromNotes) {
         unsubscribeFromNotes();
         unsubscribeFromNotes = null;
-    }
-    if (unsubscribeFromCurrentNote) {
-        unsubscribeFromCurrentNote();
-        unsubscribeFromCurrentNote = null;
     }
     currentUser = null;
     currentNoteId = null;
@@ -224,7 +270,6 @@ function renderNotesList(notes) {
 
     notes.forEach(note => {
         const noteElement = document.createElement('div');
-        // Updated styling to match shadcn ghost/accent button look
         noteElement.classList.add('note-item', 'flex', 'justify-between', 'items-center', 'rounded-md', 'px-3', 'py-2', 'text-sm', 'cursor-pointer', 'transition-colors', 'hover:bg-accent', 'hover:text-accent-foreground', 'group');
         noteElement.dataset.id = note.id;
         if (note.id === currentNoteId) {
@@ -245,46 +290,11 @@ function loadNote(id) {
         saveNote();
     }
 
-    if (unsubscribeFromCurrentNote) {
-        unsubscribeFromCurrentNote();
-        unsubscribeFromCurrentNote = null;
-    }
-
     currentNoteId = id;
     localStorage.setItem('synote_active_note_id', id);
 
     noteTitle.disabled = false;
     noteInput.disabled = false;
-
-    const processNoteContent = (noteData) => {
-        const newTitle = noteData.title || '';
-        if (noteTitle.value !== newTitle) {
-            noteTitle.value = newTitle;
-        }
-
-        let content = safeDecompress(noteData.content, noteData.isCompressed);
-
-        if (noteInput.value !== content) {
-            const isFocused = (document.activeElement === noteInput);
-            const cursorPosition = noteInput.selectionStart;
-            noteInput.value = content;
-
-            const query = searchInput.value.trim().toLowerCase();
-            if (query && !isFocused) {
-                const lowerContent = content.toLowerCase();
-                const index = lowerContent.indexOf(query);
-                if (index !== -1) {
-                    setTimeout(() => {
-                         noteInput.focus();
-                         noteInput.setSelectionRange(index, index + query.length);
-                    }, 100);
-                }
-            } else if (isFocused) {
-                const newPos = Math.min(cursorPosition, content.length);
-                noteInput.setSelectionRange(newPos, newPos);
-            }
-        }
-    };
 
     if (currentUser && currentUser.isAnonymous) {
         const noteData = GuestStore.getNote(id);
@@ -295,27 +305,10 @@ function loadNote(id) {
         return;
     }
 
-    // Instantly display cached note data from allNotes if available
+    // Instantly display note data from allNotes
     const existingNote = allNotes.find(n => n.id === id);
     if (existingNote) {
         processNoteContent(existingNote);
-    }
-
-    // Attach real-time listener if authenticated
-    if (currentUser && currentUser.uid && !currentUser.isAnonymous) {
-        const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
-
-        unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
-            if (docSnapshot.exists()) {
-                if (docSnapshot.metadata.hasPendingWrites && (document.activeElement === noteInput || document.activeElement === noteTitle)) {
-                    return;
-                }
-                processNoteContent(docSnapshot.data());
-            }
-        }, (error) => {
-            console.error("Error listening to note:", error);
-            unsubscribeFromCurrentNote = null;
-        });
     }
 
     updateActiveNoteInList(id);
@@ -396,7 +389,7 @@ export function handleUserLogin(user) {
     }
 
     if (user.isAnonymous) {
-        allNotes = GuestStore.getAllNotes();
+        allNotes = sortNotes(GuestStore.getAllNotes());
         renderNotesList(allNotes);
         updateStorageIndicator();
         if (allNotes.length > 0 && !currentNoteId) {
@@ -411,10 +404,9 @@ export function handleUserLogin(user) {
     localStorage.setItem('synote_uid', user.uid);
 
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
-    const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
-    unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-        allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    unsubscribeFromNotes = onSnapshot(notesCollectionRef, { includeMetadataChanges: true }, (snapshot) => {
+        allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         updateStorageIndicator();
 
         const queryStr = searchInput.value.trim().toLowerCase();
@@ -422,37 +414,48 @@ export function handleUserLogin(user) {
              performSearch(queryStr);
         } else {
              renderNotesList(allNotes);
-             const savedActiveId = localStorage.getItem('synote_active_note_id');
-             const hasCurrentNote = currentNoteId && allNotes.some(n => n.id === currentNoteId);
+        }
 
-             if (allNotes.length > 0) {
-                 if (!currentNoteId) {
-                     const targetId = (savedActiveId && allNotes.some(n => n.id === savedActiveId))
-                         ? savedActiveId
-                         : allNotes[0].id;
-                     loadNote(targetId);
-                 } else if (!hasCurrentNote) {
-                     // Current note was deleted remotely
-                     loadNote(allNotes[0].id);
-                 } else if (!unsubscribeFromCurrentNote) {
-                     // Ensure active note has live listener
-                     loadNote(currentNoteId);
-                 }
-             } else {
-                 currentNoteId = null;
-                 noteTitle.value = '';
-                 noteInput.value = '';
-                 noteTitle.disabled = true;
-                 noteInput.disabled = true;
-                 if (unsubscribeFromCurrentNote) {
-                     unsubscribeFromCurrentNote();
-                     unsubscribeFromCurrentNote = null;
-                 }
-             }
+        const savedActiveId = localStorage.getItem('synote_active_note_id');
+        const hasCurrentNote = currentNoteId && allNotes.some(n => n.id === currentNoteId);
+
+        if (allNotes.length > 0) {
+            if (!currentNoteId) {
+                const targetId = (savedActiveId && allNotes.some(n => n.id === savedActiveId))
+                    ? savedActiveId
+                    : allNotes[0].id;
+                loadNote(targetId);
+            } else if (!hasCurrentNote) {
+                // Current note was deleted remotely
+                loadNote(allNotes[0].id);
+            } else {
+                // Real-time cross-device sync: update active note if not currently typing locally
+                const currentNote = allNotes.find(n => n.id === currentNoteId);
+                if (currentNote && !debounceTimer) {
+                    processNoteContent(currentNote);
+                }
+            }
+        } else {
+            currentNoteId = null;
+            noteTitle.value = '';
+            noteInput.value = '';
+            noteTitle.disabled = true;
+            noteInput.disabled = true;
         }
     }, (error) => {
         console.error("Notes collection subscription error:", error);
+        if (unsubscribeFromNotes) {
+            unsubscribeFromNotes();
+        }
         unsubscribeFromNotes = null;
+        // Retry after 5 seconds — re-establish collection listener
+        clearTimeout(notesListenerRetryTimer);
+        notesListenerRetryTimer = setTimeout(() => {
+            if (currentUser && currentUser.uid === user.uid && !currentUser.isAnonymous && !unsubscribeFromNotes) {
+                console.log("Retrying notes collection listener...");
+                handleUserLogin(currentUser);
+            }
+        }, 5000);
     });
 
     showAppView();
@@ -488,18 +491,20 @@ async function createNewNote() {
     }
 
     const compressedContent = LZString.compressToUTF16("");
+    const now = new Date();
     const newNote = {
         title: "Untitled Note",
         content: compressedContent,
         isCompressed: true,
-        createdAt: currentUser.isAnonymous ? new Date().toISOString() : new Date()
+        createdAt: currentUser.isAnonymous ? now.toISOString() : now,
+        updatedAt: currentUser.isAnonymous ? now.toISOString() : now
     };
 
     if (currentUser.isAnonymous) {
         const id = 'guest_' + Date.now();
         newNote.id = id;
         GuestStore.addNote(newNote);
-        allNotes = GuestStore.getAllNotes();
+        allNotes = sortNotes(GuestStore.getAllNotes());
         updateStorageIndicator();
 
         searchInput.value = '';
@@ -522,9 +527,10 @@ async function createNewNote() {
 async function renameNote(noteId, currentTitle) {
     const newTitle = prompt("Enter new title:", currentTitle);
     if (newTitle && newTitle.trim() !== "") {
+        const now = new Date();
         if (currentUser.isAnonymous) {
-            GuestStore.updateNote(noteId, { title: newTitle });
-            allNotes = GuestStore.getAllNotes();
+            GuestStore.updateNote(noteId, { title: newTitle, updatedAt: now.toISOString() });
+            allNotes = sortNotes(GuestStore.getAllNotes());
             updateStorageIndicator();
 
             const query = searchInput.value.trim().toLowerCase();
@@ -538,16 +544,17 @@ async function renameNote(noteId, currentTitle) {
 
         const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
         try {
-            await setDoc(noteDocRef, { title: newTitle }, { merge: true });
+            await setDoc(noteDocRef, { title: newTitle, updatedAt: now }, { merge: true });
             const noteIndex = allNotes.findIndex(n => n.id === noteId);
             if (noteIndex !== -1) {
                 allNotes[noteIndex].title = newTitle;
+                allNotes[noteIndex].updatedAt = now;
+                allNotes = sortNotes(allNotes);
+                renderNotesList(allNotes);
             }
             if (currentNoteId === noteId) {
                 noteTitle.value = newTitle;
             }
-            const item = document.querySelector(`.note-item[data-id='${noteId}'] .note-item-title`);
-            if (item) item.textContent = newTitle;
             showMessage("Note renamed.", 'success');
         } catch (error) {
             console.error("Error renaming note:", error);
@@ -573,7 +580,7 @@ async function deleteNote(noteId) {
 
         if (currentUser.isAnonymous) {
             GuestStore.deleteNote(noteId);
-            allNotes = GuestStore.getAllNotes();
+            allNotes = sortNotes(GuestStore.getAllNotes());
             updateStorageIndicator();
 
             if (currentNoteId === noteId) {
@@ -583,6 +590,10 @@ async function deleteNote(noteId) {
             const query = searchInput.value.trim().toLowerCase();
             if (query) performSearch(query);
             else renderNotesList(allNotes);
+
+            if (allNotes.length > 0) {
+                loadNote(allNotes[0].id);
+            }
 
             showMessage("Note deleted.", 'success');
             return;
@@ -611,45 +622,48 @@ function saveNote() {
     saveStatus.textContent = "Saving...";
 
     const contentToSave = LZString.compressToUTF16(noteInput.value);
+    const now = new Date();
 
     if (currentUser.isAnonymous) {
         GuestStore.updateNote(currentNoteId, {
             title: noteTitle.value,
             content: contentToSave,
-            isCompressed: true
+            isCompressed: true,
+            updatedAt: now.toISOString()
         });
         const noteIndex = allNotes.findIndex(n => n.id === currentNoteId);
         if (noteIndex !== -1) {
             allNotes[noteIndex].title = noteTitle.value;
             allNotes[noteIndex].content = contentToSave;
             allNotes[noteIndex].isCompressed = true;
+            allNotes[noteIndex].updatedAt = now.toISOString();
+            allNotes = sortNotes(allNotes);
+            renderNotesList(allNotes);
         }
 
         saveStatus.textContent = "Saved (Local)";
         updateStorageIndicator();
-
-        const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
-        if (item) item.textContent = noteTitle.value || 'Untitled Note';
-
         return;
     }
 
     const noteDocRef = doc(db, "users", currentUser.uid, "notes", currentNoteId);
 
-    // Keep allNotes in sync locally
+    // Keep allNotes in sync locally and sort by most recent edit
     const noteIndex = allNotes.findIndex(n => n.id === currentNoteId);
     if (noteIndex !== -1) {
         allNotes[noteIndex].title = noteTitle.value;
         allNotes[noteIndex].content = contentToSave;
         allNotes[noteIndex].isCompressed = true;
-        const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
-        if (item) item.textContent = noteTitle.value || 'Untitled Note';
+        allNotes[noteIndex].updatedAt = now;
+        allNotes = sortNotes(allNotes);
+        renderNotesList(allNotes);
     }
 
     setDoc(noteDocRef, {
         title: noteTitle.value,
         content: contentToSave,
-        isCompressed: true
+        isCompressed: true,
+        updatedAt: now
     }, { merge: true })
         .then(() => {
             saveStatus.textContent = navigator.onLine ? "Saved" : "Saved (Offline)";
@@ -903,11 +917,33 @@ function setupEventListeners() {
         }
     });
 
+    // Re-establish listeners when network comes back online
+    window.addEventListener('online', () => {
+        if (currentUser && !currentUser.isAnonymous) {
+            saveStatus.textContent = "Online";
+            if (!unsubscribeFromNotes) {
+                console.log("Network online, re-establishing notes listener...");
+                handleUserLogin(currentUser);
+            }
+        }
+    });
+
+    window.addEventListener('offline', () => {
+        saveStatus.textContent = "Offline";
+    });
+
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden' && debounceTimer) {
             clearTimeout(debounceTimer);
             debounceTimer = null;
             saveNote();
+        }
+        // Re-establish listeners when tab becomes visible again (e.g., laptop lid reopen)
+        if (document.visibilityState === 'visible' && currentUser && !currentUser.isAnonymous) {
+            if (!unsubscribeFromNotes) {
+                console.log("Tab visible again, re-establishing notes listener...");
+                handleUserLogin(currentUser);
+            }
         }
     });
 }
@@ -963,23 +999,16 @@ async function eagerLoadNotes() {
     if (cachedUid && isLoggedIn) {
         try {
             const notesCollectionRef = collection(db, "users", cachedUid, "notes");
-            const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
-            const snapshot = await getDocsFromCache(q);
+            const snapshot = await getDocsFromCache(notesCollectionRef);
             // Only populate from cache if auth hasn't already initialized live listener
             if (!unsubscribeFromNotes && !snapshot.empty) {
-                allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
                 updateStorageIndicator();
                 renderNotesList(allNotes);
                 const savedActiveId = localStorage.getItem('synote_active_note_id');
                 const targetNote = (savedActiveId && allNotes.find(n => n.id === savedActiveId)) || allNotes[0];
                 if (targetNote && !currentNoteId) {
-                    currentNoteId = targetNote.id;
-                    updateActiveNoteInList(targetNote.id);
-                    noteTitle.disabled = false;
-                    noteInput.disabled = false;
-                    noteTitle.value = targetNote.title || '';
-                    const content = safeDecompress(targetNote.content, targetNote.isCompressed);
-                    noteInput.value = content;
+                    loadNote(targetNote.id);
                 }
             }
         } catch (e) {
