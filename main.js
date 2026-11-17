@@ -407,6 +407,12 @@ export function handleUserLogin(user) {
     const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
     unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+        const isInitialCacheEmpty = snapshot.metadata.fromCache && snapshot.empty;
+        if (isInitialCacheEmpty && allNotes.length === 0) {
+            notesList.innerHTML = '<p class="text-muted-foreground text-center mt-4 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Loading notes...</p>';
+            return;
+        }
+
         allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         updateStorageIndicator();
 
