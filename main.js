@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, query, orderBy, getDocsFromCache } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
@@ -68,6 +68,18 @@ const GuestStore = {
 export function showLoginView() {
     localStorage.removeItem('synote_logged_in');
     localStorage.removeItem('synote_uid');
+    localStorage.removeItem('synote_active_note_id');
+    if (unsubscribeFromNotes) {
+        unsubscribeFromNotes();
+        unsubscribeFromNotes = null;
+    }
+    if (unsubscribeFromCurrentNote) {
+        unsubscribeFromCurrentNote();
+        unsubscribeFromCurrentNote = null;
+    }
+    currentUser = null;
+    currentNoteId = null;
+    allNotes = [];
     document.documentElement.classList.remove('is-logged-in');
     mainContainer.classList.remove('is-app-view');
     appView.classList.add('opacity-0', 'scale-95');
@@ -124,16 +136,28 @@ function renderNotesList(notes) {
 }
 
 function loadNote(id) {
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+        saveNote();
+    }
+
     if (unsubscribeFromCurrentNote) {
         unsubscribeFromCurrentNote();
         unsubscribeFromCurrentNote = null;
     }
 
     currentNoteId = id;
+    localStorage.setItem('synote_active_note_id', id);
+
+    noteTitle.disabled = false;
+    noteInput.disabled = false;
 
     const processNoteContent = (noteData) => {
-        const cursorPosition = noteInput.selectionStart;
-        noteTitle.value = noteData.title;
+        const newTitle = noteData.title || '';
+        if (noteTitle.value !== newTitle) {
+            noteTitle.value = newTitle;
+        }
 
         let content = "";
         if (noteData.isCompressed && noteData.content) {
@@ -142,22 +166,26 @@ function loadNote(id) {
         } else {
             content = noteData.content || "";
         }
-        noteInput.value = content;
 
-        const query = searchInput.value.trim().toLowerCase();
-        if (query) {
-            const lowerContent = content.toLowerCase();
-            const index = lowerContent.indexOf(query);
-            if (index !== -1) {
-                setTimeout(() => {
-                     noteInput.focus();
-                     noteInput.setSelectionRange(index, index + query.length);
-                }, 100);
-            } else {
-                 noteInput.setSelectionRange(cursorPosition, cursorPosition);
+        if (noteInput.value !== content) {
+            const isFocused = (document.activeElement === noteInput);
+            const cursorPosition = noteInput.selectionStart;
+            noteInput.value = content;
+
+            const query = searchInput.value.trim().toLowerCase();
+            if (query && !isFocused) {
+                const lowerContent = content.toLowerCase();
+                const index = lowerContent.indexOf(query);
+                if (index !== -1) {
+                    setTimeout(() => {
+                         noteInput.focus();
+                         noteInput.setSelectionRange(index, index + query.length);
+                    }, 100);
+                }
+            } else if (isFocused) {
+                const newPos = Math.min(cursorPosition, content.length);
+                noteInput.setSelectionRange(newPos, newPos);
             }
-        } else {
-             noteInput.setSelectionRange(cursorPosition, cursorPosition);
         }
     };
 
@@ -170,13 +198,28 @@ function loadNote(id) {
         return;
     }
 
-    const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
+    // Instantly display cached note data from allNotes if available
+    const existingNote = allNotes.find(n => n.id === id);
+    if (existingNote) {
+        processNoteContent(existingNote);
+    }
 
-    unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-            processNoteContent(docSnapshot.data());
-        }
-    });
+    // Attach real-time listener if authenticated
+    if (currentUser && currentUser.uid && !currentUser.isAnonymous) {
+        const noteDocRef = doc(db, "users", currentUser.uid, "notes", id);
+
+        unsubscribeFromCurrentNote = onSnapshot(noteDocRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                if (docSnapshot.metadata.hasPendingWrites && (document.activeElement === noteInput || document.activeElement === noteTitle)) {
+                    return;
+                }
+                processNoteContent(docSnapshot.data());
+            }
+        }, (error) => {
+            console.error("Error listening to note:", error);
+            unsubscribeFromCurrentNote = null;
+        });
+    }
 
     updateActiveNoteInList(id);
 }
@@ -233,7 +276,6 @@ function updateStorageIndicator() {
 
 export function handleUserLogin(user) {
     if (currentUser && currentUser.uid === user.uid && unsubscribeFromNotes) {
-        // Already initialized (e.g. from eager load)
         currentUser = user;
         const emailDisplay = document.getElementById('user-email-display');
         if (emailDisplay) {
@@ -243,7 +285,10 @@ export function handleUserLogin(user) {
     }
 
     currentUser = user;
-    if (unsubscribeFromNotes) unsubscribeFromNotes();
+    if (unsubscribeFromNotes) {
+        unsubscribeFromNotes();
+        unsubscribeFromNotes = null;
+    }
 
     searchInput.value = '';
 
@@ -280,13 +325,39 @@ export function handleUserLogin(user) {
              performSearch(queryStr);
         } else {
              renderNotesList(allNotes);
-             if (allNotes.length > 0 && !currentNoteId) {
-                 loadNote(allNotes[0].id);
-             } else if (allNotes.length === 0) {
+             const savedActiveId = localStorage.getItem('synote_active_note_id');
+             const hasCurrentNote = currentNoteId && allNotes.some(n => n.id === currentNoteId);
+
+             if (allNotes.length > 0) {
+                 if (!currentNoteId) {
+                     const targetId = (savedActiveId && allNotes.some(n => n.id === savedActiveId))
+                         ? savedActiveId
+                         : allNotes[0].id;
+                     loadNote(targetId);
+                 } else if (!hasCurrentNote) {
+                     // Current note was deleted remotely
+                     loadNote(allNotes[0].id);
+                 } else if (!unsubscribeFromCurrentNote) {
+                     // Ensure active note has live listener
+                     loadNote(currentNoteId);
+                 }
+             } else {
                  currentNoteId = null;
+                 noteTitle.value = '';
+                 noteInput.value = '';
+                 noteTitle.disabled = true;
+                 noteInput.disabled = true;
+                 if (unsubscribeFromCurrentNote) {
+                     unsubscribeFromCurrentNote();
+                     unsubscribeFromCurrentNote = null;
+                 }
              }
         }
+    }, (error) => {
+        console.error("Notes collection subscription error:", error);
+        unsubscribeFromNotes = null;
     });
+
     showAppView();
 }
 
@@ -319,6 +390,12 @@ function performSearch(query) {
 
 async function createNewNote() {
     if (!currentUser) return;
+
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+        debounceTimer = null;
+        saveNote();
+    }
 
     const compressedContent = LZString.compressToUTF16("");
     const newNote = {
@@ -372,6 +449,15 @@ async function renameNote(noteId, currentTitle) {
         const noteDocRef = doc(db, "users", currentUser.uid, "notes", noteId);
         try {
             await setDoc(noteDocRef, { title: newTitle }, { merge: true });
+            const noteIndex = allNotes.findIndex(n => n.id === noteId);
+            if (noteIndex !== -1) {
+                allNotes[noteIndex].title = newTitle;
+            }
+            if (currentNoteId === noteId) {
+                noteTitle.value = newTitle;
+            }
+            const item = document.querySelector(`.note-item[data-id='${noteId}'] .note-item-title`);
+            if (item) item.textContent = newTitle;
             showMessage("Note renamed.", 'success');
         } catch (error) {
             console.error("Error renaming note:", error);
@@ -385,6 +471,15 @@ async function deleteNote(noteId) {
         clearTimeout(actionTimer);
         actionPending = null;
         if (!currentUser || !noteId) return;
+
+        if (debounceTimer && currentNoteId === noteId) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+        }
+
+        if (localStorage.getItem('synote_active_note_id') === noteId) {
+            localStorage.removeItem('synote_active_note_id');
+        }
 
         if (currentUser.isAnonymous) {
             GuestStore.deleteNote(noteId);
@@ -451,13 +546,23 @@ function saveNote() {
 
     const noteDocRef = doc(db, "users", currentUser.uid, "notes", currentNoteId);
 
+    // Keep allNotes in sync locally
+    const noteIndex = allNotes.findIndex(n => n.id === currentNoteId);
+    if (noteIndex !== -1) {
+        allNotes[noteIndex].title = noteTitle.value;
+        allNotes[noteIndex].content = contentToSave;
+        allNotes[noteIndex].isCompressed = true;
+        const item = document.querySelector(`.note-item[data-id='${currentNoteId}'] .note-item-title`);
+        if (item) item.textContent = noteTitle.value || 'Untitled Note';
+    }
+
     setDoc(noteDocRef, {
         title: noteTitle.value,
         content: contentToSave,
         isCompressed: true
     }, { merge: true })
         .then(() => {
-            saveStatus.textContent = "Saved";
+            saveStatus.textContent = navigator.onLine ? "Saved" : "Saved (Offline)";
         })
         .catch(error => {
             console.error("Error saving note:", error);
@@ -698,6 +803,23 @@ function setupEventListeners() {
             showMessage("Failed to paste.", 'error');
         }
     });
+
+    // Flush pending saves before unload or when tab is hidden
+    window.addEventListener('beforeunload', () => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+            saveNote();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden' && debounceTimer) {
+            clearTimeout(debounceTimer);
+            debounceTimer = null;
+            saveNote();
+        }
+    });
 }
 
 // --- Utility Functions ---
@@ -745,26 +867,40 @@ export function setButtonLoadingState(button, isLoading) {
 }
 
 // --- App Initialization ---
-function eagerLoadNotes() {
+async function eagerLoadNotes() {
     const cachedUid = localStorage.getItem('synote_uid');
     const isLoggedIn = localStorage.getItem('synote_logged_in') === 'true';
     if (cachedUid && isLoggedIn) {
-        currentUser = { uid: cachedUid };
-        const notesCollectionRef = collection(db, "users", cachedUid, "notes");
-        const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
-        unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-            allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateStorageIndicator();
-            const queryStr = searchInput.value.trim().toLowerCase();
-            if (queryStr) {
-                 performSearch(queryStr);
-            } else {
-                 renderNotesList(allNotes);
-                 if (allNotes.length > 0 && !currentNoteId) {
-                     loadNote(allNotes[0].id);
-                 }
+        try {
+            const notesCollectionRef = collection(db, "users", cachedUid, "notes");
+            const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
+            const snapshot = await getDocsFromCache(q);
+            // Only populate from cache if auth hasn't already initialized live listener
+            if (!unsubscribeFromNotes && !snapshot.empty) {
+                allNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateStorageIndicator();
+                renderNotesList(allNotes);
+                const savedActiveId = localStorage.getItem('synote_active_note_id');
+                const targetNote = (savedActiveId && allNotes.find(n => n.id === savedActiveId)) || allNotes[0];
+                if (targetNote && !currentNoteId) {
+                    currentNoteId = targetNote.id;
+                    updateActiveNoteInList(targetNote.id);
+                    noteTitle.disabled = false;
+                    noteInput.disabled = false;
+                    noteTitle.value = targetNote.title || '';
+                    let content = '';
+                    if (targetNote.isCompressed && targetNote.content) {
+                        const decompressed = LZString.decompressFromUTF16(targetNote.content);
+                        content = decompressed !== null ? decompressed : '';
+                    } else {
+                        content = targetNote.content || '';
+                    }
+                    noteInput.value = content;
+                }
             }
-        });
+        } catch (e) {
+            console.debug("Eager cache read not available:", e);
+        }
     }
 }
 
