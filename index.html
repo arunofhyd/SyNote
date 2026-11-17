@@ -319,10 +319,21 @@
             navigator.serviceWorker.register('/sw.js')
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    // Force an update check on each load
+                    registration.update();
                 })
                 .catch(err => {
                     console.log('ServiceWorker registration failed: ', err);
                 });
+
+            // Auto-reload once new service worker activates and claims clients
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
         });
     }
 </script>
