@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, getDocsFromCache } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, getDocsFromCache, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
@@ -404,8 +404,9 @@ export function handleUserLogin(user) {
     localStorage.setItem('synote_uid', user.uid);
 
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
+    const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
-    unsubscribeFromNotes = onSnapshot(notesCollectionRef, { includeMetadataChanges: true }, (snapshot) => {
+    unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
         allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         updateStorageIndicator();
 
@@ -999,7 +1000,8 @@ async function eagerLoadNotes() {
     if (cachedUid && isLoggedIn) {
         try {
             const notesCollectionRef = collection(db, "users", cachedUid, "notes");
-            const snapshot = await getDocsFromCache(notesCollectionRef);
+            const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
+            const snapshot = await getDocsFromCache(q);
             // Only populate from cache if auth hasn't already initialized live listener
             if (!unsubscribeFromNotes && !snapshot.empty) {
                 allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
