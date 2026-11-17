@@ -404,15 +404,8 @@ export function handleUserLogin(user) {
     localStorage.setItem('synote_uid', user.uid);
 
     const notesCollectionRef = collection(db, "users", currentUser.uid, "notes");
-    const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
 
-    unsubscribeFromNotes = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
-        const isInitialCacheEmpty = snapshot.metadata.fromCache && snapshot.empty;
-        if (isInitialCacheEmpty && allNotes.length === 0) {
-            notesList.innerHTML = '<p class="text-muted-foreground text-center mt-4 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Loading notes...</p>';
-            return;
-        }
-
+    unsubscribeFromNotes = onSnapshot(notesCollectionRef, (snapshot) => {
         allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         updateStorageIndicator();
 
@@ -451,6 +444,7 @@ export function handleUserLogin(user) {
         }
     }, (error) => {
         console.error("Notes collection subscription error:", error);
+        showMessage("Sync error: " + (error.message || error.code), "error");
         if (unsubscribeFromNotes) {
             unsubscribeFromNotes();
         }
@@ -625,7 +619,18 @@ async function deleteNote(noteId) {
 }
 
 function saveNote() {
-    if (!currentUser || !currentNoteId) return;
+    if (!currentUser) {
+        saveStatus.textContent = "";
+        return;
+    }
+    if (!currentNoteId) {
+        if (allNotes.length > 0) {
+            currentNoteId = allNotes[0].id;
+        } else {
+            saveStatus.textContent = "";
+            return;
+        }
+    }
     saveStatus.textContent = "Saving...";
 
     const contentToSave = LZString.compressToUTF16(noteInput.value);
@@ -1006,8 +1011,7 @@ async function eagerLoadNotes() {
     if (cachedUid && isLoggedIn) {
         try {
             const notesCollectionRef = collection(db, "users", cachedUid, "notes");
-            const q = query(notesCollectionRef, orderBy("createdAt", "desc"));
-            const snapshot = await getDocsFromCache(q);
+            const snapshot = await getDocsFromCache(notesCollectionRef);
             // Only populate from cache if auth hasn't already initialized live listener
             if (!unsubscribeFromNotes && !snapshot.empty) {
                 allNotes = sortNotes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
