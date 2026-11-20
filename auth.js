@@ -6,7 +6,7 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
 import { auth } from './firebase-config.js';
 import { showMessage, setButtonLoadingState, showLoginView, showAppView, handleUserLogin as uiHandleUserLogin } from './main.js';
 

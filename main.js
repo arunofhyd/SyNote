@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, getDocsFromCache, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, onSnapshot, setDoc, addDoc, deleteDoc, getDocsFromCache, query, orderBy } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 import { initAuth, signUpWithEmail, signInWithEmail, signInWithGoogle, appSignOut, resetPassword } from './auth.js';
 
 // --- DOM Elements ---
